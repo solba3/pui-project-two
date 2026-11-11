@@ -6,3 +6,18 @@ nameInput.addEventListener('input', () => {
   const name = nameInput.value.trim();
   descriptionLabel.textContent = `What makes this special about ${name || 'them'}?`;
 });
+
+function handleImageUpload() 
+{
+
+var image = document.getElementById("piece-image").files[0];
+
+    var reader = new FileReader();
+
+    reader.onload = function(e) {
+      document.getElementById("display-image").src = e.target.result;
+    }
+
+    reader.readAsDataURL(image);
+
+} 
