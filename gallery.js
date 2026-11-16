@@ -2,6 +2,9 @@
 
 const gridView = document.getElementById('grid-view');
 const carouselView = document.getElementById('carousel-view');
+const catalogueView = document.getElementById('catalogue-view');
+const VIEWS = { grid: gridView, carousel: carouselView, catalogue: catalogueView };
+let activeView = 'grid';
 const pieceGrid = document.getElementById('piece-grid');
 const sortSelect = document.getElementById('sort-order');
 const archiveMessage = document.getElementById('archive-message');
@@ -175,30 +178,35 @@ function fitInSquare(image) {
   });
 }
 
-// The view is kept in the address (#carousel), so a refresh stays on it.
+// The view is kept in the address (#carousel or #catalogue), so a refresh stays on it.
 function showView(view) {
-  const isCarousel = view === 'carousel';
-  history.replaceState(null, '', isCarousel ? '#carousel' : location.pathname + location.search);
+  activeView = view;
+  const hash = view === 'grid' ? '' : `#${view}`;
+  history.replaceState(null, '', location.pathname + location.search + hash);
 
   viewButtons.forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.view === view));
   });
 
-  if (pieces.length === 0) return;
-  gridView.hidden = isCarousel;
-  carouselView.hidden = !isCarousel;
-  if (isCarousel) renderCarousel();
+  if (allPieces.length === 0) return;
+  Object.entries(VIEWS).forEach(([name, section]) => {
+    section.hidden = name !== view;
+  });
+  if (view === 'carousel') renderCarousel();
+  updateFilterStatus();
 }
 
 function currentView() {
-  return location.hash === '#carousel' ? 'carousel' : 'grid';
+  const view = location.hash.slice(1);
+  return view in VIEWS ? view : 'grid';
 }
 
 function showMessage(html) {
   archiveMessage.innerHTML = html;
   archiveMessage.hidden = false;
-  gridView.hidden = true;
-  carouselView.hidden = true;
+  Object.values(VIEWS).forEach((section) => {
+    section.hidden = true;
+  });
 }
 
 viewButtons.forEach((button) => {
@@ -259,6 +267,7 @@ async function loadArchive() {
   sortAndFilterPieces();
   renderGrid();
   renderPeopleNav();
+  renderCatalogue();
   updateFilterStatus();
   setUpPeopleToggle();
   showView(currentView());
@@ -307,7 +316,8 @@ function renderPeopleNav() {
 }
 
 function updateFilterStatus() {
-  filterStatus.hidden = !personFilter;
+  // The catalogue always shows everyone, so the filter line doesn't apply there.
+  filterStatus.hidden = !personFilter || activeView === 'catalogue';
   if (personFilter) {
     const count = pieces.length;
     filterStatus.textContent = `Showing ${count} ${count === 1 ? 'piece' : 'pieces'} for ${pieces[0].person}.`;
@@ -329,6 +339,38 @@ function choosePerson(name) {
 
   // On a narrow screen the sidebar covers the pieces, so close it.
   if (!wideScreen.matches) setPeopleOpen(false);
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue: a shelf of books, one album per person, A-Z. A book is wider the
+// more pieces its person has, and opening it shows their pieces in the grid.
+
+const bookshelf = document.getElementById('bookshelf');
+
+function renderCatalogue() {
+  bookshelf.replaceChildren(...getPeople().map((person) => {
+    const item = document.createElement('li');
+
+    const book = document.createElement('button');
+    book.type = 'button';
+    book.className = 'book';
+    book.style.setProperty('--pieces', person.count); // sets the width in style.css
+    book.setAttribute('aria-label', `${person.name}, ${person.count} ${person.count === 1 ? 'piece' : 'pieces'}`);
+    book.title = person.name; // shows the full name if a long one is cut off
+
+    const label = document.createElement('span');
+    label.className = 'book-label';
+    label.textContent = person.name;
+
+    book.append(label);
+    book.addEventListener('click', () => {
+      choosePerson(person.name);
+      showView('grid');
+    });
+
+    item.append(book);
+    return item;
+  }));
 }
 
 function setPeopleOpen(open) {

@@ -303,6 +303,44 @@ body {
   font-weight: bold;
 }
 
+/* Catalogue view: books in rows, like spines on a shelf */
+.bookshelf {
+  list-style: none;
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2.5rem 0.5rem;
+}
+
+/* A plain gray spine: 3rem wide for one piece, 1rem wider for each extra
+   piece, up to 12rem */
+.book {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(3rem, calc(2rem + var(--pieces, 1) * 1rem), 12rem);
+  height: 14rem;
+  padding: 1rem 0;
+  border: none;
+  background: #a6a6a6;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The name runs sideways down the spine */
+.book-label {
+  writing-mode: vertical-rl;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 100%;
+}
+
 /* Carousel view */
 .carousel {
   display: flex;
