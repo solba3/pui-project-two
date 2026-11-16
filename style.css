@@ -72,7 +72,6 @@ body {
   aspect-ratio: 1 / 1;
   min-height: 0; /* stops a tall image from stretching the square */
   overflow: hidden;
-  border: 1px solid #ccc;
 }
 
 .piece-frame img {
