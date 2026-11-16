@@ -17,10 +17,23 @@ function compareText(a, b) {
   return a.localeCompare(b, undefined, { sensitivity: 'base' });
 }
 
-// dateAdded is an ISO date string, so comparing the strings orders by date.
-// The id breaks ties between pieces saved in the same millisecond.
+// The day a piece was collected, as YYYY-MM-DD. Pieces saved before the
+// collected date was asked for use the day they were added instead.
+function collectedDate(piece) {
+  if (piece.dateCollected) return piece.dateCollected;
+  const added = new Date(piece.dateAdded);
+  const month = String(added.getMonth() + 1).padStart(2, '0');
+  const day = String(added.getDate()).padStart(2, '0');
+  return `${added.getFullYear()}-${month}-${day}`;
+}
+
+// YYYY-MM-DD and ISO date strings both order by date when compared as text.
+// Pieces collected on the same day are ordered by when they were added, and
+// the id breaks ties between pieces saved in the same millisecond.
 function newestFirst(a, b) {
-  return b.dateAdded.localeCompare(a.dateAdded) || b.id - a.id;
+  return collectedDate(b).localeCompare(collectedDate(a))
+    || b.dateAdded.localeCompare(a.dateAdded)
+    || b.id - a.id;
 }
 
 const SORT_ORDERS = {
@@ -30,8 +43,12 @@ const SORT_ORDERS = {
   person: (a, b) => compareText(a.person, b.person) || newestFirst(a, b),
 };
 
-function formatDate(isoString) {
-  return new Date(isoString).toLocaleDateString(undefined, {
+// Shows a YYYY-MM-DD date like "May 3, 2024". The parts are read directly,
+// because new Date("2024-05-03") means midnight UTC, which is the day
+// before in time zones west of UTC.
+function formatDate(dateString) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -79,7 +96,7 @@ function renderGrid() {
 
     const details = document.createElement('span');
     details.className = 'piece-details';
-    details.textContent = `${piece.person} · ${formatDate(piece.dateAdded)}`;
+    details.textContent = `${piece.person} · ${formatDate(collectedDate(piece))}`;
 
     tile.append(frame, title, details);
     item.append(tile);
@@ -105,7 +122,7 @@ function renderCarousel() {
 
   document.getElementById('carousel-description').textContent = piece.description;
   document.getElementById('carousel-details').textContent =
-    `Added ${formatDate(piece.dateAdded)} · ${carouselIndex + 1} of ${pieces.length}`;
+    `Collected ${formatDate(collectedDate(piece))} · ${carouselIndex + 1} of ${pieces.length}`;
 }
 
 // Turns any step past either end into a position that wraps around.
