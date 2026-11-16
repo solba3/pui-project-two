@@ -51,6 +51,92 @@ body {
   margin-bottom: 1rem;
 }
 
+/* Name field: the fill-in preview sits behind the see-through text box,
+   so both must share the same font, padding and border width */
+.name-field {
+  position: relative;
+  background: Canvas;
+}
+
+.name-field input,
+.name-preview {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 2px 1.75rem 2px 4px; /* room on the right for the dropdown button */
+  border: 1px solid;
+  font: inherit;
+  line-height: 1.4;
+}
+
+.name-field input {
+  position: relative;
+  z-index: 1;
+  border-color: #767676;
+  background: transparent;
+}
+
+.name-preview {
+  position: absolute;
+  inset: 0;
+  border-color: transparent;
+  color: GrayText;
+  text-align: left;
+  white-space: pre;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.name-preview-typed {
+  visibility: hidden;
+}
+
+.name-toggle {
+  position: absolute;
+  z-index: 2;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  width: 1.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.name-options {
+  position: absolute;
+  z-index: 3;
+  top: 100%;
+  left: 0;
+  min-width: 100%;
+  max-height: 12rem;
+  overflow-y: auto;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  background: Canvas;
+  border: 1px solid #767676;
+}
+
+.name-options [role="option"] {
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.name-options [role="option"]:hover,
+.name-options [aria-selected="true"] {
+  background: Highlight;
+  color: HighlightText;
+}
+
+.name-option-new {
+  border-top: 1px solid #ccc;
+  font-style: italic;
+}
+
 /* Archive page */
 .archive-page {
   padding: 2rem 1rem;

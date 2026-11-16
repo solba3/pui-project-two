@@ -24,7 +24,15 @@
 
     <div>
       <label for="person-name">Who in your life are you reminded of?</label>
-      <input type="text" id="person-name" name="person" required>
+      <!-- Name field with a dropdown of saved names and a fill-in preview (Tab fills it in) -->
+      <div class="name-field">
+        <span class="name-preview" aria-hidden="true"><span id="name-preview-typed" class="name-preview-typed"></span><span id="name-preview-rest"></span></span>
+        <input type="text" id="person-name" name="person" required autocomplete="off"
+          role="combobox" aria-autocomplete="both" aria-expanded="false" aria-controls="person-options">
+        <button type="button" id="person-toggle" class="name-toggle" aria-label="Choose a saved name"
+          aria-expanded="false" aria-controls="person-options" tabindex="-1" hidden>&#9662;</button>
+        <ul id="person-options" class="name-options" role="listbox" aria-label="Saved names" hidden></ul>
+      </div>
     </div>
 
     <div>
