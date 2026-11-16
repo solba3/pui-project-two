@@ -7,9 +7,16 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="archive-page">
-  <header class="archive-controls float-in">
-    <a href="submit.html">Add a piece</a>
+  <!-- Sidebar of everyone in the archive; choosing a name shows only their pieces -->
+  <button type="button" id="people-toggle" class="people-toggle" aria-controls="people-nav" aria-expanded="false" hidden>Show people</button>
+  <nav id="people-nav" class="people-nav" aria-label="People">
+    <div class="float-in">
+      <h2>People</h2>
+      <ul id="people-list" class="people-list"></ul>
+    </div>
+  </nav>
 
+  <header class="archive-controls float-in">
     <div class="view-toggle" role="group" aria-label="View">
       <button type="button" data-view="grid" aria-pressed="true">Grid</button>
       <button type="button" data-view="carousel" aria-pressed="false">Carousel</button>
@@ -28,6 +35,7 @@
 
   <main>
     <p id="archive-message" class="float-in" hidden></p>
+    <p id="filter-status" hidden></p>
 
     <!-- Grid view: every piece in an equal square -->
     <section id="grid-view" class="float-in">
@@ -61,6 +69,10 @@
       <p id="carousel-details"></p>
     </section>
   </main>
+
+  <footer class="archive-footer float-in">
+    <a href="submit.html">Add a piece</a>
+  </footer>
 
   <script src="db.js"></script>
   <script src="gallery.js"></script>
