@@ -20,6 +20,7 @@
     <div class="view-toggle" role="group" aria-label="View">
       <button type="button" data-view="grid" aria-pressed="true">Grid</button>
       <button type="button" data-view="carousel" aria-pressed="false">Carousel</button>
+      <button type="button" data-view="catalogue" aria-pressed="false">Catalogue</button>
     </div>
 
     <div>
@@ -67,6 +68,12 @@
 
       <p id="carousel-description" class="carousel-description"></p>
       <p id="carousel-details"></p>
+    </section>
+
+    <!-- Catalogue view: each person's album as a book spine on a shelf, A-Z -->
+    <section id="catalogue-view" class="float-in" hidden>
+      <h1>Catalogue</h1>
+      <ul id="bookshelf" class="bookshelf"></ul>
     </section>
   </main>
 
