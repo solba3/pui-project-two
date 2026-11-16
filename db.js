@@ -14,7 +14,8 @@ function openArchive() {
   });
 }
 
-// Saves one piece: { title, person, description, image (a File), dateAdded }.
+// Saves one piece: { title, person, description, image (a File),
+// dateCollected (YYYY-MM-DD), dateAdded (when it was submitted) }.
 async function savePiece(piece) {
   const db = await openArchive();
   return new Promise((resolve, reject) => {
