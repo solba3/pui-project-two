@@ -9,10 +9,6 @@ body {
   margin: 0;
 }
 
-img {
-  border-radius: 10px;
-}
-
 /* Submission page: center the form in the middle of the page */
 .submit-page {
   min-height: 100vh;
