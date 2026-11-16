@@ -55,6 +55,7 @@ body {
 .archive-page {
   padding: 2rem 1rem;
   text-align: center;
+  overflow-x: clip; /* keeps the tilted carousel peeks from widening the page */
 }
 
 .archive-controls {
@@ -118,8 +119,64 @@ body {
   gap: 1rem;
 }
 
+.carousel-track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .carousel-frame {
-  width: min(500px, 70vw);
+  flex: none;
+  position: relative;
+  z-index: 1; /* sits in front of the sneak peeks it overlaps */
+  width: min(420px, 50vw);
+  background: Canvas; /* hides the peeks behind any empty space in the square */
+}
+
+/* Sneak peeks: smaller, tilted, half-transparent squares either side */
+.carousel-peek {
+  flex: none;
+  width: min(220px, 22vw);
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.carousel-peek-prev {
+  transform: rotate(-8deg);
+  margin-right: -2rem;
+}
+
+.carousel-peek-next {
+  transform: rotate(8deg);
+  margin-left: -2rem;
+}
+
+/* On narrow screens, move the arrow buttons below the images */
+@media (max-width: 600px) {
+  .carousel {
+    flex-wrap: wrap;
+  }
+
+  .carousel-track {
+    order: -1;
+    width: 100%;
+  }
+
+  .carousel-frame {
+    width: 56vw;
+  }
+
+  .carousel-peek {
+    width: 22vw;
+  }
+
+  .carousel-peek-prev {
+    margin-right: -1rem;
+  }
+
+  .carousel-peek-next {
+    margin-left: -1rem;
+  }
 }
 
 .carousel-description {

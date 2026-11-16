@@ -42,8 +42,17 @@
 
       <div class="carousel">
         <button type="button" id="carousel-prev" aria-label="Previous piece">&larr;</button>
-        <div class="piece-frame carousel-frame">
-          <img id="carousel-image" alt="">
+        <div class="carousel-track">
+          <!-- Sneak peeks of the pieces before and after; the arrow buttons do the same job -->
+          <div class="piece-frame carousel-peek carousel-peek-prev" id="carousel-peek-prev" aria-hidden="true">
+            <img alt="">
+          </div>
+          <div class="piece-frame carousel-frame">
+            <img id="carousel-image" alt="">
+          </div>
+          <div class="piece-frame carousel-peek carousel-peek-next" id="carousel-peek-next" aria-hidden="true">
+            <img alt="">
+          </div>
         </div>
         <button type="button" id="carousel-next" aria-label="Next piece">&rarr;</button>
       </div>
