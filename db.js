@@ -46,3 +46,18 @@ async function getAllPieces() {
     };
   });
 }
+
+// Returns the names of everyone pieces have been saved for, A-Z, each once.
+// Names that differ only in capitals count as one, using the first spelling saved.
+async function getSavedPersonNames() {
+  const pieces = await getAllPieces();
+  pieces.sort((a, b) => a.dateAdded.localeCompare(b.dateAdded));
+
+  const names = new Map();
+  pieces.forEach((piece) => {
+    const key = piece.person.toLowerCase();
+    if (!names.has(key)) names.set(key, piece.person);
+  });
+
+  return [...names.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
