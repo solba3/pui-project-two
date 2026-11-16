@@ -50,3 +50,80 @@ body {
   align-items: center;
   margin-bottom: 1rem;
 }
+
+/* Archive page */
+.archive-page {
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.archive-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem 2rem;
+  margin-bottom: 2rem;
+}
+
+/* A square box that fits its image inside without cropping or stretching */
+.piece-frame {
+  display: block;
+  aspect-ratio: 1 / 1;
+  min-height: 0; /* stops a tall image from stretching the square */
+  overflow: hidden;
+  border: 1px solid #ccc;
+}
+
+.piece-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Grid view: equal squares, centered on the page */
+.piece-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, clamp(140px, 40vw, 220px));
+  justify-content: center;
+  gap: 2rem 1.5rem;
+}
+
+.piece-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.piece-title {
+  margin-top: 0.5rem;
+  font-weight: bold;
+}
+
+/* Carousel view */
+.carousel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.carousel-frame {
+  width: min(500px, 70vw);
+}
+
+.carousel-description {
+  max-width: 40em;
+  margin: 1.5rem auto 0;
+}
