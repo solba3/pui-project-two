@@ -58,6 +58,7 @@ function renderGrid() {
     const frame = document.createElement('span');
     frame.className = 'piece-frame';
     const image = document.createElement('img');
+    fitInSquare(image);
     image.src = imageUrls.get(piece.id);
     image.alt = piece.title;
     frame.append(image);
@@ -114,6 +115,37 @@ function moveCarousel(step) {
   if (pieces.length === 0) return;
   carouselIndex = wrapIndex(carouselIndex + step);
   renderCarousel();
+  swingInMainImage(Math.sign(step));
+}
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+// The new main image swings in from the side its sneak peek was on (1 for
+// next, -1 for previous), starting at the peek's 3D angle and unfolding into
+// the centre. Nothing else in the carousel animates when switching pieces.
+function swingInMainImage(direction) {
+  if (reduceMotion.matches) return;
+
+  // Stop any swing still playing, so clicking quickly never leaves one half-finished.
+  carouselFrame.getAnimations().forEach((animation) => animation.cancel());
+  carouselFrame.animate(
+    [
+      {
+        opacity: 0.5,
+        transform: `perspective(800px) translateX(${direction * 60}%) rotateY(${direction * -40}deg) scale(0.55)`,
+      },
+      { opacity: 1, transform: 'none' },
+    ],
+    { duration: 600, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' } // same easing as the float-in
+  );
+}
+
+// Marks a picture taller than it is wide, so it fills its square's height
+// instead of its width.
+function fitInSquare(image) {
+  image.addEventListener('load', () => {
+    image.classList.toggle('is-tall', image.naturalHeight > image.naturalWidth);
+  });
 }
 
 // The view is kept in the address (#carousel), so a refresh stays on it.
@@ -159,6 +191,14 @@ document.getElementById('carousel-next').addEventListener('click', () => moveCar
 // Clicking a sneak peek moves to that piece.
 const peekPrev = document.getElementById('carousel-peek-prev');
 const peekNext = document.getElementById('carousel-peek-next');
+const carouselFrame = document.querySelector('.carousel-frame');
+
+// The carousel's images change source as it moves; each new picture is fitted.
+[
+  document.getElementById('carousel-image'),
+  peekPrev.querySelector('img'),
+  peekNext.querySelector('img'),
+].forEach(fitInSquare);
 peekPrev.addEventListener('click', () => moveCarousel(-1));
 peekNext.addEventListener('click', () => moveCarousel(1));
 

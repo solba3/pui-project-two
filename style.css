@@ -9,6 +9,10 @@ body {
   margin: 0;
 }
 
+img {
+  border-radius: 15px;
+}
+
 /* Submission page: center the form in the middle of the page */
 .submit-page {
   min-height: 100vh;
@@ -69,17 +73,25 @@ body {
 
 /* A square box that fits its image inside without cropping or stretching */
 .piece-frame {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   aspect-ratio: 1 / 1;
   min-height: 0; /* stops a tall image from stretching the square */
   overflow: hidden;
 }
 
+/* The image is sized to the picture itself (full width, or full height for
+   a tall picture) so its rounded corners land on the picture */
 .piece-frame img {
   display: block;
   width: 100%;
+  height: auto;
+}
+
+.piece-frame img.is-tall {
+  width: auto;
   height: 100%;
-  object-fit: contain;
 }
 
 /* Grid view: equal squares, centered on the page */
