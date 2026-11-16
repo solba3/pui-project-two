@@ -55,7 +55,7 @@ body {
 .archive-page {
   padding: 2rem 1rem;
   text-align: center;
-  overflow-x: clip; /* keeps the tilted carousel peeks from widening the page */
+  overflow-x: clip; /* keeps the carousel peeks from widening the page */
 }
 
 .archive-controls {
@@ -133,7 +133,8 @@ body {
   background: Canvas; /* hides the peeks behind any empty space in the square */
 }
 
-/* Sneak peeks: smaller, tilted, half-transparent squares either side */
+/* Sneak peeks: smaller, half-transparent squares either side, turned in 3D
+   so they face the main image (their inner edges sit farther back) */
 .carousel-peek {
   flex: none;
   width: min(220px, 22vw);
@@ -142,12 +143,12 @@ body {
 }
 
 .carousel-peek-prev {
-  transform: rotate(-8deg);
+  transform: perspective(800px) rotateY(40deg);
   margin-right: -2rem;
 }
 
 .carousel-peek-next {
-  transform: rotate(8deg);
+  transform: perspective(800px) rotateY(-40deg);
   margin-left: -2rem;
 }
 
