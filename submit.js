@@ -9,6 +9,26 @@ function updateDescriptionLabel() {
 
 nameInput.addEventListener('input', updateDescriptionLabel);
 
+// The collected date defaults to today, and dates after today can't be picked.
+const dateInput = document.getElementById('piece-date');
+
+// Today's date as YYYY-MM-DD in the user's own time zone (the format date inputs use).
+function todayString() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+// Kept up to date in case the page stays open past midnight.
+function setLatestDate() {
+  dateInput.max = todayString();
+}
+
+setLatestDate();
+dateInput.value = dateInput.max;
+dateInput.addEventListener('focus', setLatestDate);
+
 function handleImageUpload() 
 {
 
@@ -44,8 +64,16 @@ submitForm.addEventListener('submit', async (event) => {
     person: nameInput.value.trim(),
     description: document.getElementById('piece-description').value.trim(),
     image: document.getElementById('piece-image').files[0],
+    dateCollected: dateInput.value,
     dateAdded: new Date().toISOString(),
   };
+
+  // The picker stops later dates, but one could still be typed in.
+  setLatestDate();
+  if (piece.dateCollected > dateInput.max) {
+    submitStatus.textContent = "The date collected can't be after today.";
+    return;
+  }
 
   // A name matching a saved one apart from capitals uses the saved spelling,
   // so the same person is always sorted and shown the same way.
