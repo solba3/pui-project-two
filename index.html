@@ -3,10 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PUI Project Two</title>
+  <title>The Archive</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="archive-page">
+  <header class="archive-controls">
+    <a href="submit.html">Add a piece</a>
 
+    <div class="view-toggle" role="group" aria-label="View">
+      <button type="button" data-view="grid" aria-pressed="true">Grid</button>
+      <button type="button" data-view="carousel" aria-pressed="false">Carousel</button>
+    </div>
+
+    <div>
+      <label for="sort-order">Order by</label>
+      <select id="sort-order">
+        <option value="newest">Date added (newest first)</option>
+        <option value="oldest">Date added (oldest first)</option>
+        <option value="title">Name of piece (A–Z)</option>
+        <option value="person">Person in mind (A–Z)</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <p id="archive-message" hidden></p>
+
+    <!-- Grid view: every piece in an equal square -->
+    <section id="grid-view">
+      <h1>The Archive</h1>
+      <ul id="piece-grid" class="piece-grid"></ul>
+    </section>
+
+    <!-- Carousel view: one piece at a time, in the same order as the grid -->
+    <section id="carousel-view" hidden>
+      <h1 id="carousel-title"></h1>
+      <h2 id="carousel-person"></h2>
+
+      <div class="carousel">
+        <button type="button" id="carousel-prev" aria-label="Previous piece">&larr;</button>
+        <div class="piece-frame carousel-frame">
+          <img id="carousel-image" alt="">
+        </div>
+        <button type="button" id="carousel-next" aria-label="Next piece">&rarr;</button>
+      </div>
+
+      <p id="carousel-description" class="carousel-description"></p>
+      <p id="carousel-details"></p>
+    </section>
+  </main>
+
+  <script src="db.js"></script>
+  <script src="gallery.js"></script>
 </body>
 </html>

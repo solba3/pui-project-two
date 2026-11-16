@@ -1,0 +1,168 @@
+// Shows the saved pieces as a grid or a carousel, in the chosen order.
+
+const gridView = document.getElementById('grid-view');
+const carouselView = document.getElementById('carousel-view');
+const pieceGrid = document.getElementById('piece-grid');
+const sortSelect = document.getElementById('sort-order');
+const archiveMessage = document.getElementById('archive-message');
+const viewButtons = document.querySelectorAll('.view-toggle button');
+
+let pieces = [];        // saved pieces, sorted in the current order
+let imageUrls = new Map(); // piece id -> URL for its stored image
+let carouselIndex = 0;  // which piece the carousel is showing
+
+function compareText(a, b) {
+  return a.localeCompare(b, undefined, { sensitivity: 'base' });
+}
+
+// dateAdded is an ISO date string, so comparing the strings orders by date.
+// The id breaks ties between pieces saved in the same millisecond.
+function newestFirst(a, b) {
+  return b.dateAdded.localeCompare(a.dateAdded) || b.id - a.id;
+}
+
+const SORT_ORDERS = {
+  newest: newestFirst,
+  oldest: (a, b) => newestFirst(b, a),
+  title: (a, b) => compareText(a.title, b.title) || newestFirst(a, b),
+  person: (a, b) => compareText(a.person, b.person) || newestFirst(a, b),
+};
+
+function formatDate(isoString) {
+  return new Date(isoString).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function sortPieces() {
+  pieces.sort(SORT_ORDERS[sortSelect.value]);
+}
+
+function renderGrid() {
+  pieceGrid.replaceChildren();
+
+  pieces.forEach((piece, index) => {
+    const item = document.createElement('li');
+
+    // Selecting a piece opens it in the carousel.
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'piece-tile';
+    tile.addEventListener('click', () => {
+      carouselIndex = index;
+      showView('carousel');
+    });
+
+    const frame = document.createElement('span');
+    frame.className = 'piece-frame';
+    const image = document.createElement('img');
+    image.src = imageUrls.get(piece.id);
+    image.alt = piece.title;
+    frame.append(image);
+
+    const title = document.createElement('span');
+    title.className = 'piece-title';
+    title.textContent = piece.title;
+
+    const details = document.createElement('span');
+    details.className = 'piece-details';
+    details.textContent = `${piece.person} · ${formatDate(piece.dateAdded)}`;
+
+    tile.append(frame, title, details);
+    item.append(tile);
+    pieceGrid.append(item);
+  });
+}
+
+function renderCarousel() {
+  const piece = pieces[carouselIndex];
+  if (!piece) return;
+
+  document.getElementById('carousel-title').textContent = piece.title;
+  document.getElementById('carousel-person').textContent = piece.person;
+
+  const image = document.getElementById('carousel-image');
+  image.src = imageUrls.get(piece.id);
+  image.alt = piece.title;
+
+  document.getElementById('carousel-description').textContent = piece.description;
+  document.getElementById('carousel-details').textContent =
+    `Added ${formatDate(piece.dateAdded)} · ${carouselIndex + 1} of ${pieces.length}`;
+}
+
+// Move through the carousel, wrapping around at either end.
+function moveCarousel(step) {
+  if (pieces.length === 0) return;
+  carouselIndex = (carouselIndex + step + pieces.length) % pieces.length;
+  renderCarousel();
+}
+
+// The view is kept in the address (#carousel), so a refresh stays on it.
+function showView(view) {
+  const isCarousel = view === 'carousel';
+  history.replaceState(null, '', isCarousel ? '#carousel' : location.pathname + location.search);
+
+  viewButtons.forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.view === view));
+  });
+
+  if (pieces.length === 0) return;
+  gridView.hidden = isCarousel;
+  carouselView.hidden = !isCarousel;
+  if (isCarousel) renderCarousel();
+}
+
+function currentView() {
+  return location.hash === '#carousel' ? 'carousel' : 'grid';
+}
+
+function showMessage(html) {
+  archiveMessage.innerHTML = html;
+  archiveMessage.hidden = false;
+  gridView.hidden = true;
+  carouselView.hidden = true;
+}
+
+viewButtons.forEach((button) => {
+  button.addEventListener('click', () => showView(button.dataset.view));
+});
+
+sortSelect.addEventListener('change', () => {
+  sortPieces();
+  carouselIndex = 0;
+  renderGrid();
+  renderCarousel();
+});
+
+document.getElementById('carousel-prev').addEventListener('click', () => moveCarousel(-1));
+document.getElementById('carousel-next').addEventListener('click', () => moveCarousel(1));
+
+// Left and right arrow keys also move the carousel.
+document.addEventListener('keydown', (event) => {
+  if (carouselView.hidden || event.target.closest('select, input, textarea')) return;
+  if (event.key === 'ArrowLeft') moveCarousel(-1);
+  if (event.key === 'ArrowRight') moveCarousel(1);
+});
+
+async function loadArchive() {
+  try {
+    pieces = await getAllPieces();
+  } catch (error) {
+    showMessage('The archive could not be loaded in this browser.');
+    return;
+  }
+
+  if (pieces.length === 0) {
+    showMessage('No pieces yet. <a href="submit.html">Add your first piece.</a>');
+    return;
+  }
+
+  imageUrls = new Map(pieces.map((piece) => [piece.id, URL.createObjectURL(piece.image)]));
+  sortPieces();
+  renderGrid();
+  showView(currentView());
+}
+
+loadArchive();
