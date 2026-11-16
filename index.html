@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="archive-page">
-  <header class="archive-controls">
+  <header class="archive-controls float-in">
     <a href="submit.html">Add a piece</a>
 
     <div class="view-toggle" role="group" aria-label="View">
@@ -27,16 +27,16 @@
   </header>
 
   <main>
-    <p id="archive-message" hidden></p>
+    <p id="archive-message" class="float-in" hidden></p>
 
     <!-- Grid view: every piece in an equal square -->
-    <section id="grid-view">
+    <section id="grid-view" class="float-in">
       <h1>The Archive</h1>
       <ul id="piece-grid" class="piece-grid"></ul>
     </section>
 
     <!-- Carousel view: one piece at a time, in the same order as the grid -->
-    <section id="carousel-view" hidden>
+    <section id="carousel-view" class="float-in" hidden>
       <h1 id="carousel-title"></h1>
       <h2 id="carousel-person"></h2>
 

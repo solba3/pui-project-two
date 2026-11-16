@@ -21,8 +21,8 @@ body {
   padding: 15vh 1rem;
 }
 
-/* Fade the prompt in while it floats up from below */
-.submit-container {
+/* Fade in while floating up from below (used on both pages) */
+.float-in {
   animation: float-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -39,7 +39,7 @@ body {
 
 /* Skip the motion for visitors who have asked for less of it */
 @media (prefers-reduced-motion: reduce) {
-  .submit-container {
+  .float-in {
     animation: none;
   }
 }
