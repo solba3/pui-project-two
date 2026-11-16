@@ -8,8 +8,7 @@
 </head>
 <body class="submit-page">
   <main class="submit-container float-in">
-  <a href="index.html">Back to the archive</a>
-  <h1>Add a Piece</h1>
+  <h1>add a piece to your collection</h1>
 
   <form id="submit-form">
     <div>
@@ -29,13 +28,15 @@
     </div>
 
     <div>
-      <label for="piece-description" id="description-label">What makes this special about them?</label>
+      <label for="piece-description" id="description-label">Why does this remind you of them?</label>
       <textarea id="piece-description" name="description" rows="5" required></textarea>
     </div>
 
     <button type="submit">Submit</button>
     <p id="submit-status" role="status"></p>
   </form>
+
+  <a href="index.html">Back to the archive</a>
   </main>
 
   <script src="db.js"></script>

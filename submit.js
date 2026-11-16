@@ -4,7 +4,7 @@ const descriptionLabel = document.getElementById('description-label');
 
 nameInput.addEventListener('input', () => {
   const name = nameInput.value.trim();
-  descriptionLabel.textContent = `What makes this special about ${name || 'them'}?`;
+  descriptionLabel.textContent = `Why does this remind you of ${name || 'them'}?`;
 });
 
 function handleImageUpload() 
