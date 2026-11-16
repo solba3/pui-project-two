@@ -7,7 +7,9 @@ const sortSelect = document.getElementById('sort-order');
 const archiveMessage = document.getElementById('archive-message');
 const viewButtons = document.querySelectorAll('.view-toggle button');
 
-let pieces = [];        // saved pieces, sorted in the current order
+let allPieces = [];     // every saved piece, sorted in the current order
+let pieces = [];        // the pieces being shown: all of them, or one person's
+let personFilter = new URLSearchParams(location.search).get('person') || ''; // name shown, or '' for all
 let imageUrls = new Map(); // piece id -> URL for its stored image
 let carouselIndex = 0;  // which piece the carousel is showing
 
@@ -36,8 +38,16 @@ function formatDate(isoString) {
   });
 }
 
-function sortPieces() {
-  pieces.sort(SORT_ORDERS[sortSelect.value]);
+// Names that differ only in capitals belong to the same person.
+function personKey(name) {
+  return name.toLowerCase();
+}
+
+// Sorts every piece, then picks out the ones being shown.
+function sortAndFilterPieces() {
+  allPieces.sort(SORT_ORDERS[sortSelect.value]);
+  const key = personKey(personFilter);
+  pieces = personFilter ? allPieces.filter((piece) => personKey(piece.person) === key) : allPieces.slice();
 }
 
 function renderGrid() {
@@ -179,7 +189,7 @@ viewButtons.forEach((button) => {
 });
 
 sortSelect.addEventListener('change', () => {
-  sortPieces();
+  sortAndFilterPieces();
   carouselIndex = 0;
   renderGrid();
   renderCarousel();
@@ -211,21 +221,131 @@ document.addEventListener('keydown', (event) => {
 
 async function loadArchive() {
   try {
-    pieces = await getAllPieces();
+    allPieces = await getAllPieces();
   } catch (error) {
     showMessage('The archive could not be loaded in this browser.');
     return;
   }
 
-  if (pieces.length === 0) {
+  if (allPieces.length === 0) {
     showMessage('No pieces yet. <a href="submit.html">Add your first piece.</a>');
     return;
   }
 
-  imageUrls = new Map(pieces.map((piece) => [piece.id, URL.createObjectURL(piece.image)]));
-  sortPieces();
+  imageUrls = new Map(allPieces.map((piece) => [piece.id, URL.createObjectURL(piece.image)]));
+
+  // A name in the address that no longer has pieces shows everything instead.
+  if (!allPieces.some((piece) => personKey(piece.person) === personKey(personFilter))) {
+    personFilter = '';
+  }
+
+  sortAndFilterPieces();
   renderGrid();
+  renderPeopleNav();
+  updateFilterStatus();
+  setUpPeopleToggle();
   showView(currentView());
 }
+
+// ---------------------------------------------------------------------------
+// People sidebar: everyone in the archive, A-Z, with how many pieces each has.
+// Choosing a name shows only that person's pieces in the grid and carousel.
+
+const peopleToggle = document.getElementById('people-toggle');
+const peopleList = document.getElementById('people-list');
+const filterStatus = document.getElementById('filter-status');
+const wideScreen = window.matchMedia('(min-width: 900px)');
+const PEOPLE_OPEN_KEY = 'archive-people-open';
+
+// Each person once, using the spelling of their first piece, with a count.
+function getPeople() {
+  const people = new Map();
+  [...allPieces]
+    .sort((a, b) => a.dateAdded.localeCompare(b.dateAdded))
+    .forEach((piece) => {
+      const key = personKey(piece.person);
+      if (people.has(key)) {
+        people.get(key).count += 1;
+      } else {
+        people.set(key, { name: piece.person, count: 1 });
+      }
+    });
+  return [...people.values()].sort((a, b) => compareText(a.name, b.name));
+}
+
+function renderPeopleNav() {
+  const entries = [{ name: '', label: 'All pieces', count: allPieces.length }]
+    .concat(getPeople().map((person) => ({ ...person, label: person.name })));
+
+  peopleList.replaceChildren(...entries.map((entry) => {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = `${entry.label} (${entry.count})`;
+    if (personKey(entry.name) === personKey(personFilter)) button.setAttribute('aria-current', 'true');
+    button.addEventListener('click', () => choosePerson(entry.name));
+    item.append(button);
+    return item;
+  }));
+}
+
+function updateFilterStatus() {
+  filterStatus.hidden = !personFilter;
+  if (personFilter) {
+    const count = pieces.length;
+    filterStatus.textContent = `Showing ${count} ${count === 1 ? 'piece' : 'pieces'} for ${pieces[0].person}.`;
+  }
+}
+
+// The chosen person is kept in the address (?person=...), so a refresh keeps it.
+function choosePerson(name) {
+  personFilter = name;
+  const search = name ? `?person=${encodeURIComponent(name)}` : '';
+  history.replaceState(null, '', location.pathname + search + location.hash);
+
+  sortAndFilterPieces();
+  carouselIndex = 0;
+  renderGrid();
+  renderCarousel();
+  renderPeopleNav();
+  updateFilterStatus();
+
+  // On a narrow screen the sidebar covers the pieces, so close it.
+  if (!wideScreen.matches) setPeopleOpen(false);
+}
+
+function setPeopleOpen(open) {
+  document.body.classList.toggle('people-open', open);
+  peopleToggle.setAttribute('aria-expanded', String(open));
+  peopleToggle.textContent = open ? 'Hide people' : 'Show people';
+}
+
+// Open or closed is remembered; the first visit opens it on wide screens only.
+function setUpPeopleToggle() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem(PEOPLE_OPEN_KEY);
+  } catch (error) {
+    // Storage can be unavailable (such as in a private window); use the default.
+  }
+
+  // Apply the starting state without sliding, so the page doesn't shift on load.
+  document.body.classList.add('people-no-slide');
+  setPeopleOpen(saved === null ? wideScreen.matches : saved === 'true');
+  peopleToggle.hidden = false;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => document.body.classList.remove('people-no-slide'));
+  });
+}
+
+peopleToggle.addEventListener('click', () => {
+  const open = !document.body.classList.contains('people-open');
+  setPeopleOpen(open);
+  try {
+    localStorage.setItem(PEOPLE_OPEN_KEY, String(open));
+  } catch (error) {
+    // Not remembering is fine.
+  }
+});
 
 loadArchive();

@@ -139,9 +139,107 @@ body {
 
 /* Archive page */
 .archive-page {
+  /* A column filling the window, so the footer sits at the bottom */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   padding: 2rem 1rem;
   text-align: center;
   overflow-x: clip; /* keeps the carousel peeks from widening the page */
+}
+
+.archive-page main {
+  flex: 1;
+}
+
+/* "Add a piece", centered at the bottom of the window */
+.archive-footer {
+  padding-top: 2rem;
+}
+
+/* People sidebar: slides in from the left */
+.people-toggle {
+  position: fixed;
+  z-index: 11;
+  top: 1rem;
+  left: 1rem;
+}
+
+.people-nav {
+  position: fixed;
+  z-index: 10;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 15rem;
+  padding: 4rem 1rem 1rem; /* room at the top for the toggle button */
+  overflow-y: auto;
+  text-align: left;
+  background: Canvas;
+  border-right: 1px solid #ccc;
+  /* Hidden off to the left; visibility keeps its buttons out of the tab order */
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 0.4s;
+}
+
+.people-open .people-nav {
+  transform: none;
+  visibility: visible;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
+}
+
+.people-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.people-list button {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.people-list button[aria-current="true"] {
+  font-weight: bold;
+}
+
+/* Narrow screens: leave room above the controls for the toggle button */
+@media (max-width: 899px) {
+  .archive-page {
+    padding-top: 4rem;
+  }
+}
+
+/* Wide screens: the open sidebar moves the page over instead of covering it */
+@media (min-width: 900px) {
+  .archive-page {
+    transition: padding-left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .archive-page.people-open {
+    padding-left: calc(15rem + 1rem);
+  }
+}
+
+/* No slide when the page first loads, or for visitors who prefer less motion */
+.people-no-slide,
+.people-no-slide .people-nav {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .people-nav,
+  .people-open .people-nav,
+  .archive-page {
+    transition: none;
+  }
 }
 
 .archive-controls {
