@@ -87,15 +87,32 @@ function renderCarousel() {
   image.src = imageUrls.get(piece.id);
   image.alt = piece.title;
 
+  // Peek at the neighbouring pieces, unless this is the only one.
+  const hasNeighbours = pieces.length > 1;
+  setPeek(peekPrev, hasNeighbours ? pieces[wrapIndex(carouselIndex - 1)] : null);
+  setPeek(peekNext, hasNeighbours ? pieces[wrapIndex(carouselIndex + 1)] : null);
+
   document.getElementById('carousel-description').textContent = piece.description;
   document.getElementById('carousel-details').textContent =
     `Added ${formatDate(piece.dateAdded)} · ${carouselIndex + 1} of ${pieces.length}`;
 }
 
+// Turns any step past either end into a position that wraps around.
+function wrapIndex(index) {
+  return (index + pieces.length) % pieces.length;
+}
+
+// Shows a neighbouring piece in a sneak-peek square, or hides the square
+// (keeping its space, so the main image stays centered) when there is none.
+function setPeek(peek, piece) {
+  peek.style.visibility = piece ? 'visible' : 'hidden';
+  if (piece) peek.querySelector('img').src = imageUrls.get(piece.id);
+}
+
 // Move through the carousel, wrapping around at either end.
 function moveCarousel(step) {
   if (pieces.length === 0) return;
-  carouselIndex = (carouselIndex + step + pieces.length) % pieces.length;
+  carouselIndex = wrapIndex(carouselIndex + step);
   renderCarousel();
 }
 
@@ -138,6 +155,12 @@ sortSelect.addEventListener('change', () => {
 
 document.getElementById('carousel-prev').addEventListener('click', () => moveCarousel(-1));
 document.getElementById('carousel-next').addEventListener('click', () => moveCarousel(1));
+
+// Clicking a sneak peek moves to that piece.
+const peekPrev = document.getElementById('carousel-peek-prev');
+const peekNext = document.getElementById('carousel-peek-next');
+peekPrev.addEventListener('click', () => moveCarousel(-1));
+peekNext.addEventListener('click', () => moveCarousel(1));
 
 // Left and right arrow keys also move the carousel.
 document.addEventListener('keydown', (event) => {
