@@ -21,6 +21,7 @@
       <button type="button" data-view="grid" aria-pressed="true">Grid</button>
       <button type="button" data-view="carousel" aria-pressed="false">Carousel</button>
       <button type="button" data-view="catalogue" aria-pressed="false">Catalogue</button>
+      <button type="button" data-view="floating" aria-pressed="false">Floating</button>
     </div>
 
     <!-- Order of the pieces (grid and carousel) -->
@@ -78,12 +79,44 @@
 
       <p id="carousel-description" class="carousel-description"></p>
       <p id="carousel-details"></p>
+      <button type="button" id="edit-piece">Edit this piece</button>
+
+      <!-- Shown in place of the title, people and description while editing -->
+      <form id="edit-form" class="edit-form" hidden>
+        <div>
+          <label for="edit-title">Title this piece.</label>
+          <input type="text" id="edit-title" required>
+        </div>
+        <div>
+          <label for="edit-person">Who in your life are you reminded of?</label>
+          <p class="field-hint" id="edit-person-hint">Add as many people as you like: press Enter after each name.</p>
+          <div id="edit-people"></div>
+        </div>
+        <div>
+          <label for="edit-description" id="edit-description-label">Why does this remind you of them?</label>
+          <textarea id="edit-description" rows="5" required></textarea>
+        </div>
+        <div class="edit-actions">
+          <button type="submit">Save</button>
+          <button type="button" id="edit-cancel">Cancel</button>
+        </div>
+        <p id="edit-status" role="status"></p>
+      </form>
     </section>
 
     <!-- Catalogue view: each person's album as a book spine on a shelf, A-Z -->
     <section id="catalogue-view" class="float-in" hidden>
       <h1>Catalogue</h1>
       <ul id="bookshelf" class="bookshelf"></ul>
+    </section>
+
+    <!-- Floating view: pieces scattered at random sizes, joined by lines where they share a person -->
+    <section id="floating-view" class="float-in" hidden>
+      <h1>Floating</h1>
+      <p class="field-hint">Lines join pieces that share a person.</p>
+      <div id="floating-field" class="floating-field">
+        <svg id="floating-lines" class="floating-lines" aria-hidden="true"></svg>
+      </div>
     </section>
   </main>
 
@@ -92,6 +125,7 @@
   </footer>
 
   <script src="db.js"></script>
+  <script src="people-field.js"></script>
   <script src="gallery.js"></script>
 </body>
 </html>

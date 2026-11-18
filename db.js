@@ -14,8 +14,8 @@ function openArchive() {
   });
 }
 
-// Saves one piece: { title, person, description, image (a File),
-// dateCollected (YYYY-MM-DD), dateAdded (when it was submitted) }.
+// Saves one piece: { title, people (a list of names), description,
+// image (a File), dateCollected (YYYY-MM-DD), dateAdded (when it was submitted) }.
 async function savePiece(piece) {
   const db = await openArchive();
   return new Promise((resolve, reject) => {
@@ -30,6 +30,30 @@ async function savePiece(piece) {
       reject(transaction.error);
     };
   });
+}
+
+// Saves changes to a piece that is already in the archive.
+async function updatePiece(piece) {
+  const db = await openArchive();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    transaction.objectStore(STORE_NAME).put(piece);
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error);
+    };
+  });
+}
+
+// The people a piece is tagged with. Pieces saved before several people could
+// be tagged have a single "person" instead of a "people" list.
+function getPiecePeople(piece) {
+  if (Array.isArray(piece.people)) return piece.people;
+  return piece.person ? [piece.person] : [];
 }
 
 // Returns every saved piece, in no particular order.
@@ -56,8 +80,10 @@ async function getSavedPersonNames() {
 
   const names = new Map();
   pieces.forEach((piece) => {
-    const key = piece.person.toLowerCase();
-    if (!names.has(key)) names.set(key, piece.person);
+    getPiecePeople(piece).forEach((name) => {
+      const key = name.toLowerCase();
+      if (!names.has(key)) names.set(key, name);
+    });
   });
 
   return [...names.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
