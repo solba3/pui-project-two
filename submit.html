@@ -36,10 +36,8 @@
       <div id="people-field"></div>
     </div>
 
-    <div>
-      <label for="piece-description" id="description-label">Why does this remind you of them?</label>
-      <textarea id="piece-description" name="description" rows="5" required></textarea>
-    </div>
+    <!-- One "Why does this remind you of …?" box for each person tagged (made in people-field.js) -->
+    <div id="description-fields" class="description-fields"></div>
 
     <button type="submit">Submit</button>
     <p id="submit-status" role="status"></p>

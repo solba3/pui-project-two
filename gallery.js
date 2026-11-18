@@ -133,9 +133,31 @@ function renderCarousel() {
   setPeek(peekPrev, hasNeighbours ? pieces[wrapIndex(carouselIndex - 1)] : null);
   setPeek(peekNext, hasNeighbours ? pieces[wrapIndex(carouselIndex + 1)] : null);
 
-  document.getElementById('carousel-description').textContent = piece.description;
+  renderDescriptions(piece);
   document.getElementById('carousel-details').textContent =
     `Collected ${formatDate(collectedDate(piece))} · ${carouselIndex + 1} of ${pieces.length}`;
+}
+
+// One description is shown as it is; with several people, each person's name
+// heads what the piece means to them.
+function renderDescriptions(piece) {
+  const area = document.getElementById('carousel-description');
+  const entries = getPieceDescriptions(piece);
+
+  if (entries.length === 1) {
+    const text = document.createElement('p');
+    text.textContent = entries[0].text;
+    area.replaceChildren(text);
+    return;
+  }
+
+  area.replaceChildren(...entries.flatMap(({ person, text }) => {
+    const name = document.createElement('h3');
+    name.textContent = person;
+    const words = document.createElement('p');
+    words.textContent = text;
+    return [name, words];
+  }));
 }
 
 // Turns any step past either end into a position that wraps around.
@@ -445,23 +467,24 @@ peopleToggle.addEventListener('click', () => {
 const editButton = document.getElementById('edit-piece');
 const editForm = document.getElementById('edit-form');
 const editTitle = document.getElementById('edit-title');
-const editDescription = document.getElementById('edit-description');
-const editDescriptionLabel = document.getElementById('edit-description-label');
 const editStatus = document.getElementById('edit-status');
 const carouselArrows = [document.getElementById('carousel-prev'), document.getElementById('carousel-next')];
 const carouselText = ['carousel-title', 'carousel-person', 'carousel-description', 'carousel-details', 'edit-piece']
   .map((id) => document.getElementById(id));
 let editing = false;
 
+const editDescriptions = createDescriptionFields(document.getElementById('edit-descriptions'), {
+  idPrefix: 'edit-description',
+});
 const editPeople = createPeopleField(document.getElementById('edit-people'), {
   inputId: 'edit-person',
-  onChange: updateEditDescriptionLabel,
+  onChange: updateEditDescriptions,
 });
 document.getElementById('edit-person').setAttribute('aria-describedby', 'edit-person-hint');
 
-function updateEditDescriptionLabel() {
-  const names = editPeople.getNames({ includeTyped: true });
-  editDescriptionLabel.textContent = `Why does this remind you of ${names.length ? formatNames(names) : 'them'}?`;
+// One box for each person tagged.
+function updateEditDescriptions() {
+  editDescriptions.update(editPeople.getNames(), editPeople.getTypedName());
 }
 
 function startEditing() {
@@ -470,9 +493,19 @@ function startEditing() {
 
   editing = true;
   editTitle.value = piece.title;
-  editDescription.value = piece.description;
+
+  // Each person's box starts with what was written for them. Older pieces have
+  // one description for everyone, so each box starts with that.
+  const people = getPiecePeople(piece);
+  const existing = {};
+  getPieceDescriptions(piece).forEach(({ person, text }) => {
+    if (person) existing[person] = text;
+    else people.forEach((name) => { existing[name] = text; });
+  });
+  editDescriptions.setDescriptions(existing);
+
   editPeople.setSavedNames(getPeople().map((person) => person.name));
-  editPeople.setNames(getPiecePeople(piece));
+  editPeople.setNames(people);
   editStatus.textContent = '';
 
   carouselText.forEach((element) => {
@@ -517,20 +550,23 @@ editForm.addEventListener('submit', async (event) => {
   editPeople.commitTyped();
 
   const piece = pieces[carouselIndex];
+  const people = editPeople.getNames();
   const changes = {
     title: editTitle.value.trim(),
-    people: editPeople.getNames(),
-    description: editDescription.value.trim(),
+    people,
+    descriptions: editDescriptions.getDescriptions(people),
   };
 
-  if (!changes.title || changes.people.length === 0 || !changes.description) {
+  if (!changes.title || people.length === 0 || Object.values(changes.descriptions).some((text) => !text)) {
     editStatus.textContent = 'Please fill in every field before saving.';
     return;
   }
 
-  // Saved pieces now always keep a list of people, so the old single name goes.
+  // Saved pieces now keep a list of people with a description for each, so
+  // the old single name and description go.
   const updated = { ...piece, ...changes };
   delete updated.person;
+  delete updated.description;
 
   editStatus.textContent = 'Saving…';
   try {
@@ -543,6 +579,7 @@ editForm.addEventListener('submit', async (event) => {
   // The same object is in allPieces, so every view picks up the changes.
   Object.assign(piece, changes);
   delete piece.person;
+  delete piece.description;
 
   stopEditing();
 

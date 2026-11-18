@@ -239,6 +239,11 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
       return includeTyped && typed && !isChosen(typed) ? [...chosen, typed] : [...chosen];
     },
 
+    // A name still being typed, not yet a tag.
+    getTypedName() {
+      return input.value.trim();
+    },
+
     // Turns a name still being typed into a tag (used before saving).
     commitTyped() {
       addName(input.value);
@@ -265,6 +270,93 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
 
     focus() {
       input.focus();
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Description boxes: one "Why does this remind you of …?" box for each tagged
+// person. Before anyone is tagged there is a single box, named after a name
+// still being typed (or "them"); what is written there carries over to the
+// first person tagged. Text written for someone stays if they are untagged
+// and tagged again.
+
+function createDescriptionFields(root, { idPrefix }) {
+  const texts = new Map();   // person (lowercase) -> text written for them
+  const entries = new Map(); // person (lowercase) -> { entry, label, box }
+  let shown = [];            // [{ key, name }] for the boxes on screen
+  let counter = 0;
+
+  const keyFor = (name) => name.toLowerCase();
+  const UNTAGGED = ''; // the box shown before anyone is tagged
+
+  function makeEntry(key) {
+    counter += 1;
+    const entry = document.createElement('div');
+    entry.className = 'description-entry';
+
+    const label = document.createElement('label');
+    label.htmlFor = `${idPrefix}-${counter}`;
+
+    const box = document.createElement('textarea');
+    box.id = label.htmlFor;
+    box.rows = 5;
+    box.required = true;
+    box.value = texts.get(key) || '';
+    box.addEventListener('input', () => texts.set(key, box.value));
+
+    entry.append(label, box);
+    return { entry, label, box };
+  }
+
+  return {
+    // Shows a box for each tagged name, or one box when nobody is tagged yet.
+    update(names, typedName = '') {
+      const wanted = names.length
+        ? names.map((name) => ({ key: keyFor(name), name }))
+        : [{ key: UNTAGGED, name: typedName.trim() || 'them' }];
+
+      // What was written before anyone was tagged belongs to the first person.
+      if (names.length && texts.get(UNTAGGED) && !texts.get(wanted[0].key)) {
+        texts.set(wanted[0].key, texts.get(UNTAGGED));
+        texts.delete(UNTAGGED);
+      }
+
+      // Remove boxes no longer wanted, and add or relabel the rest in order.
+      const wantedKeys = new Set(wanted.map((item) => item.key));
+      entries.forEach((parts, key) => {
+        if (!wantedKeys.has(key)) {
+          parts.entry.remove();
+          entries.delete(key);
+        }
+      });
+
+      const sameOrder = shown.length === wanted.length && shown.every((item, i) => item.key === wanted[i].key);
+      wanted.forEach(({ key, name }) => {
+        if (!entries.has(key)) entries.set(key, makeEntry(key));
+        const parts = entries.get(key);
+        parts.label.textContent = `Why does this remind you of ${name}?`;
+        if (!sameOrder) root.append(parts.entry); // appending moves it into order
+      });
+      shown = wanted;
+    },
+
+    // { name: text } for each tagged name, in order.
+    getDescriptions(names) {
+      const descriptions = {};
+      names.forEach((name) => {
+        descriptions[name] = (texts.get(keyFor(name)) || '').trim();
+      });
+      return descriptions;
+    },
+
+    // Starts the boxes off with existing text, given as { name: text }.
+    setDescriptions(descriptions) {
+      texts.clear();
+      entries.forEach((parts) => parts.entry.remove());
+      entries.clear();
+      shown = [];
+      Object.entries(descriptions).forEach(([name, text]) => texts.set(keyFor(name), text));
     },
   };
 }
