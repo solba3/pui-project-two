@@ -126,15 +126,69 @@ body {
   white-space: nowrap;
 }
 
+/* The option under the pointer or picked out with the arrow keys */
 .name-options [role="option"]:hover,
-.name-options [aria-selected="true"] {
+.name-options .is-active {
   background: Highlight;
   color: HighlightText;
+}
+
+/* Names already tagged are ticked */
+.name-options [role="option"]::before {
+  content: "";
+  display: inline-block;
+  width: 1.25em;
+}
+
+.name-options [aria-selected="true"]::before {
+  content: "✓";
 }
 
 .name-option-new {
   border-top: 1px solid #ccc;
   font-style: italic;
+}
+
+/* Tagged people, each with a button to remove them */
+.people-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.people-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.people-tags li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.1rem 0.2rem 0.1rem 0.6rem;
+  border: 1px solid #767676;
+  border-radius: 999px;
+}
+
+.people-tags button {
+  padding: 0 0.35rem;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.field-hint {
+  margin: 0 0 0.4rem;
+  font-size: 0.85em;
+  color: GrayText;
 }
 
 /* Archive page */
@@ -345,6 +399,65 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   max-height: 100%;
+}
+
+/* Floating view: pieces placed by gallery.js over lines drawn between them */
+.floating-field {
+  position: relative;
+  max-width: 70rem;
+  margin: 1.5rem auto 0;
+}
+
+.floating-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.floating-lines line {
+  stroke: #9a9a9a;
+  stroke-width: 1.5;
+}
+
+.floating-piece {
+  position: absolute;
+  z-index: var(--layer); /* set at random, so overlaps stack differently */
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+/* The piece being pointed at or focused comes to the front */
+.floating-piece:hover,
+.floating-piece:focus-visible {
+  z-index: 1000;
+  transform: scale(1.05);
+}
+
+.floating-piece .piece-frame {
+  width: 100%;
+}
+
+/* Editing a piece in the carousel */
+.edit-form {
+  margin-top: 1.5rem;
+}
+
+.edit-form > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.edit-form > .edit-actions {
+  flex-direction: row;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 /* Carousel view */

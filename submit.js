@@ -1,13 +1,22 @@
-// Update the description prompt with the name of the person as it is typed.
-const nameInput = document.getElementById('person-name');
+// The people this piece reminds the user of: one or more, as tags.
 const descriptionLabel = document.getElementById('description-label');
+const peopleField = createPeopleField(document.getElementById('people-field'), {
+  inputId: 'person-name',
+  onChange: updateDescriptionLabel,
+});
+document.getElementById('person-name').setAttribute('aria-describedby', 'person-hint');
 
+// The description prompt names the people as they are added.
 function updateDescriptionLabel() {
-  const name = nameInput.value.trim();
-  descriptionLabel.textContent = `Why does this remind you of ${name || 'them'}?`;
+  const names = peopleField.getNames({ includeTyped: true });
+  descriptionLabel.textContent = `Why does this remind you of ${names.length ? formatNames(names) : 'them'}?`;
 }
 
-nameInput.addEventListener('input', updateDescriptionLabel);
+getSavedPersonNames()
+  .then((names) => peopleField.setSavedNames(names))
+  .catch(() => {
+    // Without saved names the field still works as a plain text box.
+  });
 
 // The collected date defaults to today, and dates after today can't be picked.
 const dateInput = document.getElementById('piece-date');
@@ -59,9 +68,12 @@ const submitStatus = document.getElementById('submit-status');
 submitForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
+  // A name still being typed counts, as if Enter had been pressed.
+  peopleField.commitTyped();
+
   const piece = {
     title: document.getElementById('piece-title').value.trim(),
-    person: nameInput.value.trim(),
+    people: peopleField.getNames(),
     description: document.getElementById('piece-description').value.trim(),
     image: document.getElementById('piece-image').files[0],
     dateCollected: dateInput.value,
@@ -75,13 +87,8 @@ submitForm.addEventListener('submit', async (event) => {
     return;
   }
 
-  // A name matching a saved one apart from capitals uses the saved spelling,
-  // so the same person is always sorted and shown the same way.
-  const savedSpelling = savedNames.find((name) => name.toLowerCase() === piece.person.toLowerCase());
-  if (savedSpelling) piece.person = savedSpelling;
-
   // The fields are required, but a field holding only spaces still gets through.
-  if (!piece.title || !piece.person || !piece.description) {
+  if (!piece.title || piece.people.length === 0 || !piece.description) {
     submitStatus.textContent = 'Please fill in every field before submitting.';
     return;
   }
@@ -98,156 +105,3 @@ submitForm.addEventListener('submit', async (event) => {
     submitButton.disabled = false;
   }
 });
-
-// ---------------------------------------------------------------------------
-// Saved names: a dropdown of everyone already in the archive, and a fill-in
-// preview of the first saved name (A-Z) that starts with what has been typed.
-// Pressing Tab fills the previewed name in.
-
-const nameToggle = document.getElementById('person-toggle');
-const nameOptions = document.getElementById('person-options');
-const previewTyped = document.getElementById('name-preview-typed');
-const previewRest = document.getElementById('name-preview-rest');
-
-let savedNames = [];     // A-Z
-let suggestedName = '';  // the saved name being previewed, if any
-let activeOption = -1;   // the option highlighted with the arrow keys
-
-function fillInName(name) {
-  nameInput.value = name;
-  updateDescriptionLabel();
-  updatePreview();
-}
-
-// Shows the rest of the first matching saved name after what has been typed.
-// The typed part is drawn invisibly so the rest lines up after it.
-function updatePreview() {
-  const typed = nameInput.value;
-  const caretAtEnd = nameInput.selectionStart === typed.length && nameInput.selectionEnd === typed.length;
-  const match = typed && caretAtEnd && document.activeElement === nameInput
-    ? savedNames.find((name) => name.toLowerCase().startsWith(typed.toLowerCase()))
-    : undefined;
-
-  suggestedName = match && match.length > typed.length ? match : '';
-  previewTyped.textContent = suggestedName ? typed : '';
-  previewRest.textContent = suggestedName ? suggestedName.slice(typed.length) : '';
-}
-
-function renderNameOptions() {
-  const options = savedNames.map((name, index) => {
-    const option = document.createElement('li');
-    option.id = `person-option-${index}`;
-    option.setAttribute('role', 'option');
-    option.textContent = name;
-    return option;
-  });
-
-  const addNew = document.createElement('li');
-  addNew.id = 'person-option-new';
-  addNew.setAttribute('role', 'option');
-  addNew.className = 'name-option-new';
-  addNew.dataset.addNew = 'true';
-  addNew.textContent = '+ Add a new person';
-
-  nameOptions.replaceChildren(...options, addNew);
-}
-
-function setActiveOption(index) {
-  const options = nameOptions.children;
-  activeOption = Math.max(0, Math.min(index, options.length - 1));
-
-  [...options].forEach((option, i) => option.setAttribute('aria-selected', String(i === activeOption)));
-  nameInput.setAttribute('aria-activedescendant', options[activeOption].id);
-  options[activeOption].scrollIntoView({ block: 'nearest' });
-}
-
-function openNameOptions() {
-  nameOptions.hidden = false;
-  nameInput.setAttribute('aria-expanded', 'true');
-  nameToggle.setAttribute('aria-expanded', 'true');
-}
-
-function closeNameOptions() {
-  nameOptions.hidden = true;
-  activeOption = -1;
-  nameInput.setAttribute('aria-expanded', 'false');
-  nameToggle.setAttribute('aria-expanded', 'false');
-  nameInput.removeAttribute('aria-activedescendant');
-  [...nameOptions.children].forEach((option) => option.setAttribute('aria-selected', 'false'));
-}
-
-function chooseOption(option) {
-  if (option.dataset.addNew) {
-    nameInput.placeholder = "Type their name";
-    fillInName('');
-  } else {
-    fillInName(option.textContent);
-  }
-  closeNameOptions();
-  nameInput.focus();
-}
-
-nameInput.addEventListener('input', () => {
-  closeNameOptions();
-  updatePreview();
-});
-nameInput.addEventListener('focus', updatePreview);
-nameInput.addEventListener('blur', () => {
-  closeNameOptions();
-  updatePreview();
-});
-// Moving the caret away from the end hides the preview.
-nameInput.addEventListener('keyup', updatePreview);
-nameInput.addEventListener('click', updatePreview);
-
-nameInput.addEventListener('keydown', (event) => {
-  const listOpen = !nameOptions.hidden;
-
-  if (event.key === 'Tab' && !event.shiftKey && suggestedName) {
-    event.preventDefault();
-    fillInName(suggestedName);
-  } else if (event.key === 'ArrowDown' && savedNames.length) {
-    event.preventDefault();
-    if (!listOpen) openNameOptions();
-    setActiveOption(listOpen ? activeOption + 1 : 0);
-  } else if (event.key === 'ArrowUp' && listOpen) {
-    event.preventDefault();
-    setActiveOption(activeOption - 1);
-  } else if (event.key === 'Enter' && listOpen && activeOption >= 0) {
-    event.preventDefault(); // choose the name instead of submitting the form
-    chooseOption(nameOptions.children[activeOption]);
-  } else if (event.key === 'Escape' && listOpen) {
-    closeNameOptions();
-  }
-});
-
-// Pressing on the button or a name would normally take focus from the field
-// (closing the list); keeping focus lets the click go through.
-nameToggle.addEventListener('mousedown', (event) => event.preventDefault());
-nameOptions.addEventListener('mousedown', (event) => event.preventDefault());
-
-nameToggle.addEventListener('click', () => {
-  if (nameOptions.hidden) {
-    openNameOptions();
-  } else {
-    closeNameOptions();
-  }
-  nameInput.focus();
-});
-
-nameOptions.addEventListener('click', (event) => {
-  const option = event.target.closest('[role="option"]');
-  if (option) chooseOption(option);
-});
-
-// The dropdown only appears once at least one name has been saved.
-getSavedPersonNames()
-  .then((names) => {
-    savedNames = names;
-    if (savedNames.length === 0) return;
-    renderNameOptions();
-    nameToggle.hidden = false;
-  })
-  .catch(() => {
-    // Without saved names the field still works as a plain text box.
-  });
