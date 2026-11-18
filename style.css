@@ -438,8 +438,31 @@ body {
   transform: scale(1.05);
 }
 
+/* Each piece drifts gently around its spot, on a loop of its own (the values
+   are set at random by gallery.js). The drift is on the picture inside, so it
+   doesn't clash with the piece growing slightly when pointed at. */
 .floating-piece .piece-frame {
   width: 100%;
+  animation: drift var(--drift-time, 9s) ease-in-out var(--drift-start, 0s) infinite;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate(var(--drift-x1), var(--drift-y1)) rotate(var(--drift-turn));
+  }
+  66% {
+    transform: translate(var(--drift-x2), var(--drift-y2)) rotate(calc(var(--drift-turn) * -1));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-piece .piece-frame {
+    animation: none;
+  }
 }
 
 /* Editing a piece in the carousel */
