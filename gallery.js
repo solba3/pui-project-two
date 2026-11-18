@@ -565,21 +565,43 @@ editForm.addEventListener('submit', async (event) => {
 
 // ---------------------------------------------------------------------------
 // Floating view: pieces scattered loosely over a grid at random sizes (0.75 to
-// 1.5 times the usual size), so some overlap and some don't, with lines joining
-// pieces that share a person.
+// 1.75 times the usual size), so some overlap and some don't, with lines joining
+// pieces that share a person. Each piece drifts gently around its spot.
 
 const floatingField = document.getElementById('floating-field');
 const floatingLines = document.getElementById('floating-lines');
-const floatingLooks = new Map(); // piece id -> its random size, nudge and layer, kept for the visit
+const floatingLooks = new Map(); // piece id -> its random size, nudge, layer and drift, kept for the visit
+
+// A random number between min and max.
+function between(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+// A random distance of min to max, either way.
+function eitherWay(min, max) {
+  return between(min, max) * (Math.random() < 0.5 ? -1 : 1);
+}
 let floatingWidth = 0;
 
 function floatingLook(piece) {
   if (!floatingLooks.has(piece.id)) {
     floatingLooks.set(piece.id, {
-      scale: 0.75 + Math.random() * 0.75,
-      nudgeX: Math.random() * 2 - 1,
-      nudgeY: Math.random() * 2 - 1,
+      scale: between(0.75, 1.75),
+      nudgeX: between(-1, 1),
+      nudgeY: between(-1, 1),
       layer: 1 + Math.floor(Math.random() * 100), // which overlapping piece sits on top
+      // The drift loop (see .floating-piece .piece-frame in style.css): two
+      // points a few pixels away to wander through, a slight tilt, and its own
+      // speed, started part-way through so the pieces don't move in step.
+      drift: {
+        '--drift-x1': `${eitherWay(3, 8)}px`,
+        '--drift-y1': `${eitherWay(3, 8)}px`,
+        '--drift-x2': `${eitherWay(3, 8)}px`,
+        '--drift-y2': `${eitherWay(3, 8)}px`,
+        '--drift-turn': `${eitherWay(0.5, 1.5)}deg`,
+        '--drift-time': `${between(7, 12)}s`,
+        '--drift-start': `${-between(0, 12)}s`,
+      },
     });
   }
   return floatingLooks.get(piece.id);
@@ -627,7 +649,7 @@ function renderFloating() {
   const width = floatingField.clientWidth;
   floatingWidth = width;
   const base = Math.min(150, width / 3.4); // a piece's size at 1x
-  const cell = base * 1.4;                 // distance between grid points
+  const cell = base * 1.55;                // distance between grid points
   const columns = Math.max(1, Math.floor(width / cell));
   const left = (width - columns * cell) / 2;
   const centres = new Map();
@@ -661,6 +683,7 @@ function renderFloating() {
 
     const frame = document.createElement('span');
     frame.className = 'piece-frame';
+    Object.entries(look.drift).forEach(([name, value]) => frame.style.setProperty(name, value));
     const image = document.createElement('img');
     fitInSquare(image);
     image.src = imageUrls.get(piece.id);
