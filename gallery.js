@@ -188,6 +188,10 @@ function showView(view) {
     button.setAttribute('aria-pressed', String(button.dataset.view === view));
   });
 
+  // The catalogue orders books by name; the other views order pieces.
+  document.getElementById('sort-order-control').hidden = view === 'catalogue';
+  document.getElementById('catalogue-order-control').hidden = view !== 'catalogue';
+
   if (allPieces.length === 0) return;
   Object.entries(VIEWS).forEach(([name, section]) => {
     section.hidden = name !== view;
@@ -342,13 +346,17 @@ function choosePerson(name) {
 }
 
 // ---------------------------------------------------------------------------
-// Catalogue: a shelf of books, one album per person, A-Z. A book is wider the
+// Catalogue: a shelf of books, one album per person, A-Z or Z-A. A book is wider the
 // more pieces its person has, and opening it shows their pieces in the grid.
 
 const bookshelf = document.getElementById('bookshelf');
+const catalogueOrder = document.getElementById('catalogue-order');
 
 function renderCatalogue() {
-  bookshelf.replaceChildren(...getPeople().map((person) => {
+  const people = getPeople(); // A-Z
+  if (catalogueOrder.value === 'za') people.reverse();
+
+  bookshelf.replaceChildren(...people.map((person) => {
     const item = document.createElement('li');
 
     const book = document.createElement('button');
@@ -372,6 +380,8 @@ function renderCatalogue() {
     return item;
   }));
 }
+
+catalogueOrder.addEventListener('change', renderCatalogue);
 
 function setPeopleOpen(open) {
   document.body.classList.toggle('people-open', open);

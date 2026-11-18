@@ -23,13 +23,23 @@
       <button type="button" data-view="catalogue" aria-pressed="false">Catalogue</button>
     </div>
 
-    <div>
+    <!-- Order of the pieces (grid and carousel) -->
+    <div id="sort-order-control">
       <label for="sort-order">Order by</label>
       <select id="sort-order">
         <option value="newest">Date collected (newest first)</option>
         <option value="oldest">Date collected (oldest first)</option>
         <option value="title">Name of piece (A–Z)</option>
         <option value="person">Person in mind (A–Z)</option>
+      </select>
+    </div>
+
+    <!-- Order of the books (catalogue) -->
+    <div id="catalogue-order-control" hidden>
+      <label for="catalogue-order">Order by</label>
+      <select id="catalogue-order">
+        <option value="az">Name (A–Z)</option>
+        <option value="za">Name (Z–A)</option>
       </select>
     </div>
   </header>
