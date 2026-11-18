@@ -552,6 +552,24 @@ body {
   }
 }
 
+/* Each person's name above what the piece means to them */
+.carousel-description h3 {
+  margin: 1.25rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.carousel-description h3 + p {
+  margin-top: 0;
+}
+
+/* One description box per tagged person, on both forms */
+.description-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
 .carousel-description {
   max-width: 40em;
   margin: 1.5rem auto 0;

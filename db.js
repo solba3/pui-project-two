@@ -14,8 +14,9 @@ function openArchive() {
   });
 }
 
-// Saves one piece: { title, people (a list of names), description,
-// image (a File), dateCollected (YYYY-MM-DD), dateAdded (when it was submitted) }.
+// Saves one piece: { title, people (a list of names), descriptions ({ name:
+// why it reminds the user of them }), image (a File), dateCollected
+// (YYYY-MM-DD), dateAdded (when it was submitted) }.
 async function savePiece(piece) {
   const db = await openArchive();
   return new Promise((resolve, reject) => {
@@ -54,6 +55,16 @@ async function updatePiece(piece) {
 function getPiecePeople(piece) {
   if (Array.isArray(piece.people)) return piece.people;
   return piece.person ? [piece.person] : [];
+}
+
+// A piece's descriptions as [{ person, text }], in the order its people were
+// tagged. Pieces saved before each person had their own description have one
+// "description" for everyone, returned as a single entry with person: null.
+function getPieceDescriptions(piece) {
+  if (piece.descriptions) {
+    return getPiecePeople(piece).map((person) => ({ person, text: piece.descriptions[person] || '' }));
+  }
+  return [{ person: null, text: piece.description || '' }];
 }
 
 // Returns every saved piece, in no particular order.

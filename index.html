@@ -77,7 +77,8 @@
         <button type="button" id="carousel-next" aria-label="Next piece">&rarr;</button>
       </div>
 
-      <p id="carousel-description" class="carousel-description"></p>
+      <!-- One description, or one per person when several are tagged -->
+      <div id="carousel-description" class="carousel-description"></div>
       <p id="carousel-details"></p>
       <button type="button" id="edit-piece">Edit this piece</button>
 
@@ -92,10 +93,8 @@
           <p class="field-hint" id="edit-person-hint">Add as many people as you like: press Enter after each name.</p>
           <div id="edit-people"></div>
         </div>
-        <div>
-          <label for="edit-description" id="edit-description-label">Why does this remind you of them?</label>
-          <textarea id="edit-description" rows="5" required></textarea>
-        </div>
+        <!-- One "Why does this remind you of …?" box for each person tagged -->
+        <div id="edit-descriptions" class="description-fields"></div>
         <div class="edit-actions">
           <button type="submit">Save</button>
           <button type="button" id="edit-cancel">Cancel</button>

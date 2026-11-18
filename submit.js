@@ -1,16 +1,19 @@
-// The people this piece reminds the user of: one or more, as tags.
-const descriptionLabel = document.getElementById('description-label');
+// The people this piece reminds the user of: one or more, as tags, each with
+// their own "Why does this remind you of …?" box.
+const descriptionFields = createDescriptionFields(document.getElementById('description-fields'), {
+  idPrefix: 'piece-description',
+});
 const peopleField = createPeopleField(document.getElementById('people-field'), {
   inputId: 'person-name',
-  onChange: updateDescriptionLabel,
+  onChange: updateDescriptionFields,
 });
 document.getElementById('person-name').setAttribute('aria-describedby', 'person-hint');
 
-// The description prompt names the people as they are added.
-function updateDescriptionLabel() {
-  const names = peopleField.getNames({ includeTyped: true });
-  descriptionLabel.textContent = `Why does this remind you of ${names.length ? formatNames(names) : 'them'}?`;
+function updateDescriptionFields() {
+  descriptionFields.update(peopleField.getNames(), peopleField.getTypedName());
 }
+
+updateDescriptionFields();
 
 getSavedPersonNames()
   .then((names) => peopleField.setSavedNames(names))
@@ -70,11 +73,12 @@ submitForm.addEventListener('submit', async (event) => {
 
   // A name still being typed counts, as if Enter had been pressed.
   peopleField.commitTyped();
+  const people = peopleField.getNames();
 
   const piece = {
     title: document.getElementById('piece-title').value.trim(),
-    people: peopleField.getNames(),
-    description: document.getElementById('piece-description').value.trim(),
+    people,
+    descriptions: descriptionFields.getDescriptions(people),
     image: document.getElementById('piece-image').files[0],
     dateCollected: dateInput.value,
     dateAdded: new Date().toISOString(),
@@ -88,7 +92,7 @@ submitForm.addEventListener('submit', async (event) => {
   }
 
   // The fields are required, but a field holding only spaces still gets through.
-  if (!piece.title || piece.people.length === 0 || !piece.description) {
+  if (!piece.title || people.length === 0 || Object.values(piece.descriptions).some((text) => !text)) {
     submitStatus.textContent = 'Please fill in every field before submitting.';
     return;
   }
