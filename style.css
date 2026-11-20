@@ -7,7 +7,11 @@
 
 body {
   margin: 0;
-  font-family: 'American Typewriter', monospace;
+  font-family:  Verdana, sans-serif;
+}
+
+h1 {
+  font-weight: 500;
 }
 
 /* Submission page: center the form in the middle of the page */
