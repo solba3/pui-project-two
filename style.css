@@ -527,7 +527,7 @@ label {
 
 .piece-title {
   margin-top: 0.5rem;
-  font-weight: bold;
+  font-weight: 500;
 }
 
 /* Catalogue view: books in rows, like spines on a shelf */
