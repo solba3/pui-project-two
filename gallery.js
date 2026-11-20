@@ -106,7 +106,7 @@ function renderGrid() {
 
     const title = document.createElement('span');
     title.className = 'piece-title';
-    title.textContent = piece.title;
+    title.append(piece.title, peopleDots(getPiecePeople(piece), personColors));
 
     const details = document.createElement('span');
     details.className = 'piece-details';
@@ -122,7 +122,7 @@ function renderCarousel() {
   const piece = pieces[carouselIndex];
   if (!piece) return;
 
-  document.getElementById('carousel-title').textContent = piece.title;
+  document.getElementById('carousel-title').replaceChildren(piece.title, peopleDots(getPiecePeople(piece), personColors));
   document.getElementById('carousel-person').replaceChildren(namesWithColors(getPiecePeople(piece), personColors));
 
   const image = document.getElementById('carousel-image');
@@ -427,7 +427,7 @@ function renderCatalogue() {
 
     const label = document.createElement('span');
     label.className = 'book-label';
-    label.append(colorDot(), person.name);
+    label.textContent = person.name;
 
     // The name and the outline both take the person's color.
     if (personColors.has(personKey(person.name))) book.style.color = personColors.get(personKey(person.name));

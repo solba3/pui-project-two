@@ -364,15 +364,21 @@ label {
   color: GrayText;
 }
 
-/* The small circle before a person's name, in their color */
+/* After a piece's title: a row of small circles, one per tagged person,
+   each in that person's color */
+.people-dots {
+  display: inline-flex;
+  gap: 0.2em;
+  margin-inline-start: 0.35em;
+  vertical-align: middle;
+}
+
 .person-dot {
   display: inline-block;
   width: 0.25em;
   height: .25em;
-  margin-inline-end: 0.35em;
   border-radius: 50%;
   background: currentColor;
-  vertical-align: 0.05em;
 }
 
 .person-name {
