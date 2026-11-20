@@ -2,12 +2,21 @@
 // IndexedDB can hold full-size images, unlike localStorage (about 5MB).
 const DB_NAME = 'archive';
 const STORE_NAME = 'pieces';
+const PEOPLE_STORE = 'people'; // each person's color, by lowercase name
 
+// Version 2 added the people store; archives made with version 1 keep their
+// pieces and gain the new store.
 function openArchive() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(DB_NAME, 2);
     request.onupgradeneeded = () => {
-      request.result.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains(PEOPLE_STORE)) {
+        db.createObjectStore(PEOPLE_STORE, { keyPath: 'key' });
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -65,6 +74,43 @@ function getPieceDescriptions(piece) {
     return getPiecePeople(piece).map((person) => ({ person, text: piece.descriptions[person] || '' }));
   }
   return [{ person: null, text: piece.description || '' }];
+}
+
+// The color chosen for each person, as a Map of lowercase name -> "#rrggbb".
+// People with no color saved are missing from it.
+async function getPersonColors() {
+  const db = await openArchive();
+  return new Promise((resolve, reject) => {
+    const request = db.transaction(PEOPLE_STORE, 'readonly').objectStore(PEOPLE_STORE).getAll();
+    request.onsuccess = () => {
+      db.close();
+      resolve(new Map(request.result.map((person) => [person.key, person.color])));
+    };
+    request.onerror = () => {
+      db.close();
+      reject(request.error);
+    };
+  });
+}
+
+// Saves colors given as { name: "#rrggbb" }, replacing any saved before.
+async function savePersonColors(colors) {
+  const db = await openArchive();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(PEOPLE_STORE, 'readwrite');
+    const store = transaction.objectStore(PEOPLE_STORE);
+    Object.entries(colors).forEach(([name, color]) => {
+      store.put({ key: name.toLowerCase(), name, color });
+    });
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error);
+    };
+  });
 }
 
 // Returns every saved piece, in no particular order.
