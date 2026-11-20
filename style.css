@@ -16,15 +16,16 @@ body {
 }
 
 button {
-  font-family: Outfit;
+  font-family: Outfit, sans-serif;
 }
 
-h1 {
-  font-weight: 500;
+label {
+  font-family: Outfit, sans-serif;
 }
 
 /* Submission page: center the form in the middle of the page */
 .submit-page {
+  font-family: Outfit, sans-serif;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
