@@ -173,6 +173,26 @@ h1 {
   cursor: pointer;
 }
 
+/* "!" beside a color that is hard to read on white */
+.contrast-alert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: #b45309;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+
+.contrast-alert[hidden] {
+  display: none;
+}
+
 /* A tag's small swatch for recoloring that person */
 .tag-color {
   width: 1.1rem;
