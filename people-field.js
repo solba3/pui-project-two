@@ -45,6 +45,43 @@ function coloredName(name, colors) {
 
 const DEFAULT_COLOR = '#000000';
 
+// ---- Contrast against the white page ----
+// WCAG's lowest level with a rule for text contrast is AA, which asks for at
+// least 4.5:1 for normal-size text (Level A itself has no contrast rule).
+const MIN_CONTRAST = 4.5;
+
+// How much a "#rrggbb" color stands out against white, from 1 (none) to 21.
+function contrastOnWhite(hex) {
+  const channel = (start) => {
+    const value = parseInt(hex.slice(start, start + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+  return 1.05 / (luminance + 0.05);
+}
+
+const isLowContrast = (color) => contrastOnWhite(color) < MIN_CONTRAST;
+
+// A "!" shown beside a color that is hard to read on white.
+function makeContrastAlert() {
+  const alert = document.createElement('span');
+  alert.className = 'contrast-alert';
+  alert.setAttribute('role', 'img');
+  alert.textContent = '!';
+  alert.hidden = true;
+  return alert;
+}
+
+function updateContrastAlert(alert, color) {
+  const ratio = contrastOnWhite(color);
+  alert.hidden = ratio >= MIN_CONTRAST;
+  // Rounded down, so a color just under the line never reads as meeting it.
+  const shown = (Math.floor(ratio * 100) / 100).toFixed(2);
+  const message = `Low contrast: this color is hard to read on white (${shown}:1; WCAG AA needs at least ${MIN_CONTRAST}:1)`;
+  alert.setAttribute('aria-label', message);
+  alert.title = message;
+}
+
 function createPeopleField(root, { inputId, onChange = () => {} }) {
   const listId = `${inputId}-options`;
   root.classList.add('people-field');
@@ -63,6 +100,10 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
       <input type="color" class="name-color" value="${DEFAULT_COLOR}"
         aria-label="Color for this person" title="Choose a color for this person">
     </div>`;
+
+  // The "!" beside the picker when its color is hard to read on white.
+  const pickerAlert = makeContrastAlert();
+  root.querySelector('.name-row').append(pickerAlert);
 
   const tagList = root.querySelector('.people-tags');
   const input = root.querySelector('input');
@@ -99,7 +140,14 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
   function syncPicker() {
     const typed = input.value.trim();
     picker.value = (typed && knownColor(typed)) || draftColor;
-    picker.setAttribute('aria-label', `Color for ${typed || 'this person'}`);
+    updatePickerAlert();
+  }
+
+  function updatePickerAlert() {
+    const typed = input.value.trim();
+    const warning = isLowContrast(picker.value) ? ' (low contrast on white)' : '';
+    picker.setAttribute('aria-label', `Color for ${typed || 'this person'}${warning}`);
+    updateContrastAlert(pickerAlert, picker.value);
   }
 
   picker.addEventListener('input', () => {
@@ -109,6 +157,7 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
     } else {
       draftColor = picker.value; // for the new name being typed
     }
+    updatePickerAlert();
     renderTags();
     renderOptions();
   });
@@ -129,9 +178,13 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
       swatch.value = colorFor(name);
       swatch.setAttribute('aria-label', `Color for ${name}`);
       swatch.title = `Color for ${name}`;
+      const alert = makeContrastAlert();
+      updateContrastAlert(alert, swatch.value);
+
       swatch.addEventListener('input', () => {
         chosenColors.set(name.toLowerCase(), swatch.value);
         label.style.color = swatch.value;
+        updateContrastAlert(alert, swatch.value);
         renderOptions();
         syncPicker();
       });
@@ -146,7 +199,7 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
         input.focus();
       });
 
-      tag.append(swatch, label, remove);
+      tag.append(swatch, label, alert, remove);
       return tag;
     }));
     tagList.hidden = chosen.length === 0;
