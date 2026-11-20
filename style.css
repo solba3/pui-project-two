@@ -15,6 +15,10 @@ body {
   font-style: normal;
 }
 
+button {
+  font-family: Outfit;
+}
+
 h1 {
   font-weight: 500;
 }
@@ -439,7 +443,7 @@ h1 {
   font: inherit;
   cursor: pointer;
   transition: all 0.5s ease;
-
+  border-radius: 8px;
 }
 
 .book:hover {
