@@ -33,22 +33,33 @@ function namesWithColors(names, colors) {
   return fragment;
 }
 
-// One name in its person's color, after a small circle of the same color.
+// One name in its person's color.
 function coloredName(name, colors) {
   const span = document.createElement('span');
   span.className = 'person-name';
-  span.append(colorDot(), name);
+  span.textContent = name;
   const color = colors.get(name.toLowerCase());
   if (color) span.style.color = color;
   return span;
 }
 
-// A small circle filled with the color of the text around it.
-function colorDot() {
-  const dot = document.createElement('span');
-  dot.className = 'person-dot';
-  dot.setAttribute('aria-hidden', 'true');
-  return dot;
+// A row of small circles, one in each person's color, to follow a piece's
+// title. People without a saved color get a circle in the text color.
+// Hovering a circle shows whose it is; screen readers skip the row, since the
+// names are given beside it.
+function peopleDots(names, colors) {
+  const row = document.createElement('span');
+  row.className = 'people-dots';
+  row.setAttribute('aria-hidden', 'true');
+  names.forEach((name) => {
+    const dot = document.createElement('span');
+    dot.className = 'person-dot';
+    dot.title = name;
+    const color = colors.get(name.toLowerCase());
+    if (color) dot.style.color = color;
+    row.append(dot);
+  });
+  return row;
 }
 
 const DEFAULT_COLOR = '#000000';
