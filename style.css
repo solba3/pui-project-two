@@ -424,8 +424,8 @@ h1 {
   gap: 2.5rem 0.5rem;
 }
 
-/* A plain gray spine: 3rem wide for one piece, 1rem wider for each extra
-   piece, up to 12rem */
+/* A white spine outlined in the person's color: 3rem wide for one piece,
+   1rem wider for each extra piece, up to 12rem */
 .book {
   display: flex;
   align-items: center;
@@ -433,8 +433,8 @@ h1 {
   width: clamp(3rem, calc(2rem + var(--pieces, 1) * 1rem), 12rem);
   height: 14rem;
   padding: 1rem 0;
-  border: none;
-  background: #a6a6a6;
+  border: 2px solid currentColor; /* the person's color, set on the book by gallery.js */
+  background: #ffffff;
   color: inherit;
   font: inherit;
   cursor: pointer;

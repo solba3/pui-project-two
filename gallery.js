@@ -428,7 +428,9 @@ function renderCatalogue() {
     const label = document.createElement('span');
     label.className = 'book-label';
     label.textContent = person.name;
-    if (personColors.has(personKey(person.name))) label.style.color = personColors.get(personKey(person.name));
+
+    // The name and the outline both take the person's color.
+    if (personColors.has(personKey(person.name))) book.style.color = personColors.get(personKey(person.name));
 
     book.append(label);
     book.addEventListener('click', () => {
