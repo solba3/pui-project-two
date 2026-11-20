@@ -75,8 +75,9 @@ label {
   margin-bottom: 1.25rem;
   padding: 2rem 2.5rem 2.5rem;
   background: #ffffff;
-  border: 1px solid #d4d4d4;
-  border-radius: 6px;
+  /* The same outline as the catalogue books, in the text color */
+  border: 2px solid currentColor;
+  border-radius: 8px;
 }
 
 .postcard h1 {
