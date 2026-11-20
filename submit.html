@@ -5,42 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add a Piece</title>
   <link rel="stylesheet" href="style.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
 </head>
 <body class="submit-page">
   <main class="submit-container float-in">
-  <h1>add a piece to your collection</h1>
+  <!-- The form laid out as a postcard: the heading across the top, the picture
+       on the left, and the writing side on the right -->
+  <form id="submit-form" class="postcard">
+    <h1>add a piece to your collection</h1>
 
-  <form id="submit-form">
-    <div>
-      <label for="piece-image">Image of what you captured</label>
-      <input type="file" id="piece-image" onchange="handleImageUpload()" name="image" accept="image/*" required>
-      <img id="display-image" height="500" src=" " alt="user's submitted object" hidden>
+    <!-- Picture side -->
+    <div class="postcard-picture">
+      <div class="field">
+        <label for="piece-image">Image of what you captured</label>
+        <input type="file" id="piece-image" onchange="handleImageUpload()" name="image" accept="image/*" required>
+      </div>
+      <div class="postcard-photo">
+        <img id="display-image" height="500" src=" " alt="user's submitted object" hidden>
+      </div>
     </div>
 
-    <div>
-      <label for="piece-title">Title this piece.</label>
-      <input type="text" id="piece-title" name="title" required>
+    <!-- Writing side -->
+    <div class="postcard-writing">
+      <div class="field">
+        <label for="piece-title">Title this piece.</label>
+        <input type="text" id="piece-title" name="title" required>
+      </div>
+
+      <div class="field">
+        <label for="piece-date">when did this get collected?</label>
+        <!-- Defaults to today; dates after today can't be picked (set in submit.js) -->
+        <input type="date" id="piece-date" name="dateCollected" required>
+      </div>
+
+      <div class="field">
+        <label for="person-name">Who in your life are you reminded of?</label>
+        <p class="field-hint" id="person-hint">Add as many people as you like: press Enter after each name.</p>
+        <!-- Filled in by people-field.js: tags for each person, a dropdown of saved
+             names, and a fill-in preview (Tab fills it in) -->
+        <div id="people-field"></div>
+      </div>
+
+      <!-- One "Why does this remind you of …?" box for each person tagged (made in people-field.js) -->
+      <div id="description-fields" class="description-fields"></div>
+
+      <button type="submit">Submit</button>
+      <p id="submit-status" role="status"></p>
     </div>
-
-    <div>
-      <label for="piece-date">when did this get collected?</label>
-      <!-- Defaults to today; dates after today can't be picked (set in submit.js) -->
-      <input type="date" id="piece-date" name="dateCollected" required>
-    </div>
-
-    <div>
-      <label for="person-name">Who in your life are you reminded of?</label>
-      <p class="field-hint" id="person-hint">Add as many people as you like: press Enter after each name.</p>
-      <!-- Filled in by people-field.js: tags for each person, a dropdown of saved
-           names, and a fill-in preview (Tab fills it in) -->
-      <div id="people-field"></div>
-    </div>
-
-    <!-- One "Why does this remind you of …?" box for each person tagged (made in people-field.js) -->
-    <div id="description-fields" class="description-fields"></div>
-
-    <button type="submit">Submit</button>
-    <p id="submit-status" role="status"></p>
   </form>
 
   <a href="index.html">Back to the archive</a>
