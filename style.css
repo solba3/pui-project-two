@@ -15,12 +15,17 @@ body {
   font-style: normal;
 }
 
-h1 {
-  font-weight: 500;
+button {
+  font-family: Outfit, sans-serif;
+}
+
+label {
+  font-family: Outfit, sans-serif;
 }
 
 /* Submission page: center the form in the middle of the page */
 .submit-page {
+  font-family: Outfit, sans-serif;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -439,7 +444,7 @@ h1 {
   font: inherit;
   cursor: pointer;
   transition: all 0.5s ease;
-
+  border-radius: 8px;
 }
 
 .book:hover {
