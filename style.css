@@ -364,6 +364,9 @@ label {
   color: GrayText;
 }
 
+.person-name {
+  font-family: "Cutive Mono", Courier, monospace;
+} 
 /* Archive page */
 .archive-page {
   /* A column filling the window, so the footer sits at the bottom */
