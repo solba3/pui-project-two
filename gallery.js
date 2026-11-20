@@ -427,7 +427,7 @@ function renderCatalogue() {
 
     const label = document.createElement('span');
     label.className = 'book-label';
-    label.textContent = person.name;
+    label.append(colorDot(), person.name);
 
     // The name and the outline both take the person's color.
     if (personColors.has(personKey(person.name))) book.style.color = personColors.get(personKey(person.name));
@@ -626,11 +626,15 @@ editForm.addEventListener('submit', async (event) => {
 // ---------------------------------------------------------------------------
 // Floating view: pieces scattered loosely over a grid at random sizes (0.75 to
 // 1.75 times the usual size), so some overlap and some don't, with lines joining
-// pieces that share a person. Each piece drifts gently around its spot.
+// pieces that share a person. Each piece drifts gently around its spot, and can
+// be dragged somewhere else (or moved with the arrow keys) for the rest of the
+// visit; reloading the page scatters them afresh.
 
 const floatingField = document.getElementById('floating-field');
 const floatingLines = document.getElementById('floating-lines');
-const floatingLooks = new Map(); // piece id -> its random size, nudge, layer and drift, kept for the visit
+const floatingLooks = new Map(); // piece id -> its random size, nudge, layer, drift and drag, kept for the visit
+let floatingLayout = null;        // where each piece is drawn now, and the lines that end at it
+let topLayer = 101;               // above every random layer, for the piece last dragged
 
 // A random number between min and max.
 function between(min, max) {
@@ -650,6 +654,8 @@ function floatingLook(piece) {
       nudgeX: between(-1, 1),
       nudgeY: between(-1, 1),
       layer: 1 + Math.floor(Math.random() * 100), // which overlapping piece sits on top
+      dragX: 0, // how far the visitor has dragged it from its random spot
+      dragY: 0,
       // The drift loop (see .floating-piece .piece-frame in style.css): two
       // points a few pixels away to wander through, a slight tilt, and its own
       // speed, started part-way through so the pieces don't move in step.
@@ -732,12 +738,11 @@ function renderFloating() {
     const tile = document.createElement('button');
     tile.type = 'button';
     tile.className = 'floating-piece';
-    tile.style.left = `${x - size / 2}px`;
     tile.style.width = `${size}px`;
     tile.style.setProperty('--layer', look.layer);
     tile.title = `${piece.title} · ${formatNames(getPiecePeople(piece))}`;
-    tile.setAttribute('aria-label', tile.title);
-    tile.addEventListener('click', () => {
+    tile.setAttribute('aria-label', `${tile.title}. Drag, or use the arrow keys, to move it.`);
+    makeDraggable(tile, piece, look, () => {
       carouselIndex = index;
       showView('carousel');
     });
@@ -749,6 +754,7 @@ function renderFloating() {
     fitInSquare(image);
     image.src = imageUrls.get(piece.id);
     image.alt = '';
+    image.draggable = false; // so dragging moves the piece, not a copy of the image
     frame.append(image);
     tile.append(frame);
     return tile;
@@ -762,26 +768,129 @@ function renderFloating() {
   centres.forEach((centre) => {
     centre.y -= shift;
   });
-  tiles.forEach((tile, index) => {
-    tile.style.top = `${tops[index] - shift}px`;
-  });
 
   const height = Math.max(...bottoms) - shift;
   floatingField.style.height = `${height}px`;
   floatingLines.setAttribute('width', width);
   floatingLines.setAttribute('height', height);
 
+  floatingLayout = { width, height, centres, sizes, tiles: new Map(), lineEnds: new Map() };
+
+  // Put each piece where it was dragged to this visit (if anywhere), kept inside the area.
+  pieces.forEach((piece, index) => {
+    const look = floatingLook(piece);
+    const centre = centres.get(piece.id);
+    floatingLayout.tiles.set(piece.id, tiles[index]);
+    placeFloatingPiece(piece.id, centre.x + look.dragX, centre.y + look.dragY);
+  });
+
+  // Lines, remembering which end of each line belongs to which piece, so the
+  // ends can follow a piece being dragged.
   floatingLines.replaceChildren(...floatingConnections(centres).map(([from, to, person]) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', centres.get(from).x);
-    line.setAttribute('y1', centres.get(from).y);
-    line.setAttribute('x2', centres.get(to).x);
-    line.setAttribute('y2', centres.get(to).y);
+    [[from, '1'], [to, '2']].forEach(([id, end]) => {
+      line.setAttribute(`x${end}`, centres.get(id).x);
+      line.setAttribute(`y${end}`, centres.get(id).y);
+      if (!floatingLayout.lineEnds.has(id)) floatingLayout.lineEnds.set(id, []);
+      floatingLayout.lineEnds.get(id).push({ line, end });
+    });
     if (personColors.has(person)) line.style.stroke = personColors.get(person);
     return line;
   }));
 
   floatingField.replaceChildren(floatingLines, ...tiles);
+}
+
+// Moves a piece's centre to (x, y), kept inside the area, along with the ends
+// of its lines.
+function placeFloatingPiece(id, x, y) {
+  const { width, height, centres, sizes, tiles, lineEnds } = floatingLayout;
+  const half = sizes.get(id) / 2;
+  const centre = centres.get(id);
+  centre.x = Math.min(Math.max(x, half), width - half);
+  centre.y = Math.min(Math.max(y, half), height - half);
+
+  const tile = tiles.get(id);
+  tile.style.left = `${centre.x - half}px`;
+  tile.style.top = `${centre.y - half}px`;
+
+  (lineEnds.get(id) || []).forEach(({ line, end }) => {
+    line.setAttribute(`x${end}`, centre.x);
+    line.setAttribute(`y${end}`, centre.y);
+  });
+}
+
+// Moves a piece by a visitor's drag or arrow key, and remembers how far it has
+// moved from its random spot for the rest of the visit.
+function moveFloatingPiece(piece, look, x, y) {
+  const centre = floatingLayout.centres.get(piece.id);
+  const before = { x: centre.x, y: centre.y };
+  placeFloatingPiece(piece.id, x, y);
+  look.dragX += centre.x - before.x;
+  look.dragY += centre.y - before.y;
+}
+
+function bringToFront(tile, look) {
+  topLayer += 1;
+  look.layer = topLayer;
+  tile.style.setProperty('--layer', look.layer);
+}
+
+// Pressing and moving drags a piece; pressing without moving (or Enter) opens it.
+const DRAG_DISTANCE = 4; // pixels a press must move before it counts as a drag
+
+function makeDraggable(tile, piece, look, open) {
+  let start = null; // where the press began, and the piece's centre then
+  let dragged = false;
+
+  tile.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    const centre = floatingLayout.centres.get(piece.id);
+    start = { x: event.clientX, y: event.clientY, centreX: centre.x, centreY: centre.y };
+    dragged = false;
+    tile.setPointerCapture(event.pointerId);
+  });
+
+  tile.addEventListener('pointermove', (event) => {
+    if (!start) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (!dragged && Math.hypot(dx, dy) < DRAG_DISTANCE) return;
+    if (!dragged) {
+      dragged = true;
+      tile.classList.add('is-dragging');
+      bringToFront(tile, look);
+    }
+    moveFloatingPiece(piece, look, start.centreX + dx, start.centreY + dy);
+  });
+
+  const finish = () => {
+    start = null;
+    tile.classList.remove('is-dragging');
+  };
+  tile.addEventListener('pointerup', finish);
+  tile.addEventListener('pointercancel', finish);
+
+  // The click that ends a drag doesn't open the piece.
+  tile.addEventListener('click', () => {
+    if (dragged) {
+      dragged = false;
+      return;
+    }
+    open();
+  });
+
+  // Arrow keys move a focused piece: 10px, or 40px with Shift.
+  const KEY_STEPS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  tile.addEventListener('keydown', (event) => {
+    const direction = KEY_STEPS[event.key];
+    if (!direction) return;
+    event.preventDefault();
+    const step = event.shiftKey ? 40 : 10;
+    const centre = floatingLayout.centres.get(piece.id);
+    bringToFront(tile, look);
+    moveFloatingPiece(piece, look, centre.x + direction[0] * step, centre.y + direction[1] * step);
+  });
 }
 
 // Lay the pieces out again when the space changes width, such as when the

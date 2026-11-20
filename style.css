@@ -364,6 +364,17 @@ label {
   color: GrayText;
 }
 
+/* The small circle before a person's name, in their color */
+.person-dot {
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  margin-inline-end: 0.35em;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 0.05em;
+}
+
 .person-name {
   font-family: "Cutive Mono", Courier, monospace;
 } 
@@ -605,6 +616,17 @@ label {
   background: none;
   cursor: pointer;
   transition: transform 0.3s ease;
+}
+
+/* Pieces can be dragged; touch-action stops a drag scrolling the page */
+.floating-piece {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.floating-piece.is-dragging {
+  cursor: grabbing;
 }
 
 /* The piece being pointed at or focused comes to the front */
