@@ -15,6 +15,7 @@ let allPieces = [];     // every saved piece, sorted in the current order
 let pieces = [];        // the pieces being shown: all of them, or one person's
 let personFilter = new URLSearchParams(location.search).get('person') || ''; // name shown, or '' for all
 let imageUrls = new Map(); // piece id -> URL for its stored image
+let personColors = new Map(); // lowercase name -> the color chosen for that person
 let carouselIndex = 0;  // which piece the carousel is showing
 
 function compareText(a, b) {
@@ -109,7 +110,7 @@ function renderGrid() {
 
     const details = document.createElement('span');
     details.className = 'piece-details';
-    details.textContent = `${formatNames(getPiecePeople(piece))} · ${formatDate(collectedDate(piece))}`;
+    details.append(namesWithColors(getPiecePeople(piece), personColors), ` · ${formatDate(collectedDate(piece))}`);
 
     tile.append(frame, title, details);
     item.append(tile);
@@ -122,7 +123,7 @@ function renderCarousel() {
   if (!piece) return;
 
   document.getElementById('carousel-title').textContent = piece.title;
-  document.getElementById('carousel-person').textContent = formatNames(getPiecePeople(piece));
+  document.getElementById('carousel-person').replaceChildren(namesWithColors(getPiecePeople(piece), personColors));
 
   const image = document.getElementById('carousel-image');
   image.src = imageUrls.get(piece.id);
@@ -153,7 +154,7 @@ function renderDescriptions(piece) {
 
   area.replaceChildren(...entries.flatMap(({ person, text }) => {
     const name = document.createElement('h3');
-    name.textContent = person;
+    name.append(coloredName(person, personColors));
     const words = document.createElement('p');
     words.textContent = text;
     return [name, words];
@@ -293,6 +294,13 @@ async function loadArchive() {
     return;
   }
 
+  // Without saved colors, names just use the text color.
+  try {
+    personColors = await getPersonColors();
+  } catch (error) {
+    personColors = new Map();
+  }
+
   if (allPieces.length === 0) {
     showMessage('No pieces yet. <a href="submit.html">Add your first piece.</a>');
     return;
@@ -351,7 +359,11 @@ function renderPeopleNav() {
     const item = document.createElement('li');
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = `${entry.label} (${entry.count})`;
+    if (entry.name) {
+      button.append(coloredName(entry.name, personColors), ` (${entry.count})`);
+    } else {
+      button.textContent = `${entry.label} (${entry.count})`;
+    }
     if (personKey(entry.name) === personKey(personFilter)) button.setAttribute('aria-current', 'true');
     button.addEventListener('click', () => choosePerson(entry.name));
     item.append(button);
@@ -365,7 +377,11 @@ function updateFilterStatus() {
   if (personFilter) {
     const count = pieces.length;
     const person = getPeople().find((entry) => personKey(entry.name) === personKey(personFilter));
-    filterStatus.textContent = `Showing ${count} ${count === 1 ? 'piece' : 'pieces'} for ${person.name}.`;
+    filterStatus.replaceChildren(
+      `Showing ${count} ${count === 1 ? 'piece' : 'pieces'} for `,
+      coloredName(person.name, personColors),
+      '.',
+    );
   }
 }
 
@@ -412,6 +428,7 @@ function renderCatalogue() {
     const label = document.createElement('span');
     label.className = 'book-label';
     label.textContent = person.name;
+    if (personColors.has(personKey(person.name))) label.style.color = personColors.get(personKey(person.name));
 
     book.append(label);
     book.addEventListener('click', () => {
@@ -505,6 +522,7 @@ function startEditing() {
   editDescriptions.setDescriptions(existing);
 
   editPeople.setSavedNames(getPeople().map((person) => person.name));
+  editPeople.setSavedColors(personColors);
   editPeople.setNames(people);
   editStatus.textContent = '';
 
@@ -569,8 +587,10 @@ editForm.addEventListener('submit', async (event) => {
   delete updated.description;
 
   editStatus.textContent = 'Saving…';
+  const colors = editPeople.getColors();
   try {
     await updatePiece(updated);
+    await savePersonColors(colors);
   } catch (error) {
     editStatus.textContent = 'Sorry, the changes could not be saved. Please try again.';
     return;
@@ -580,6 +600,7 @@ editForm.addEventListener('submit', async (event) => {
   Object.assign(piece, changes);
   delete piece.person;
   delete piece.description;
+  Object.entries(colors).forEach(([name, color]) => personColors.set(personKey(name), color));
 
   stopEditing();
 
@@ -644,9 +665,10 @@ function floatingLook(piece) {
   return floatingLooks.get(piece.id);
 }
 
-// Pairs of pieces to join with a line. Each person's pieces are joined by the
+// Lines to draw, as [from, to, person]. Each person's pieces are joined by the
 // shortest set of lines that connects them all, rather than a line between
-// every pair, which would cover the view for someone with many pieces.
+// every pair, which would cover the view for someone with many pieces. A
+// line is drawn in its person's color.
 function floatingConnections(centres) {
   const groups = new Map(); // person -> ids of their pieces
   pieces.forEach((piece) => {
@@ -660,7 +682,7 @@ function floatingConnections(centres) {
   const distance = (a, b) => Math.hypot(centres.get(a).x - centres.get(b).x, centres.get(a).y - centres.get(b).y);
   const pairs = new Map();
 
-  groups.forEach((idSet) => {
+  groups.forEach((idSet, person) => {
     const ids = [...idSet];
     const joined = [ids.shift()];
     while (ids.length) {
@@ -673,7 +695,7 @@ function floatingConnections(centres) {
       });
       joined.push(ids.splice(best.index, 1)[0]);
       const key = [best.from, best.to].sort((a, b) => a - b).join('-');
-      pairs.set(key, [best.from, best.to]);
+      if (!pairs.has(key)) pairs.set(key, [best.from, best.to, person]);
     }
   });
 
@@ -747,12 +769,13 @@ function renderFloating() {
   floatingLines.setAttribute('width', width);
   floatingLines.setAttribute('height', height);
 
-  floatingLines.replaceChildren(...floatingConnections(centres).map(([from, to]) => {
+  floatingLines.replaceChildren(...floatingConnections(centres).map(([from, to, person]) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', centres.get(from).x);
     line.setAttribute('y1', centres.get(from).y);
     line.setAttribute('x2', centres.get(to).x);
     line.setAttribute('y2', centres.get(to).y);
+    if (personColors.has(person)) line.style.stroke = personColors.get(person);
     return line;
   }));
 

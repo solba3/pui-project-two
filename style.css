@@ -154,6 +154,30 @@ h1 {
   font-style: italic;
 }
 
+/* The name box and its color picker, side by side */
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.name-color {
+  width: 2.25rem;
+  height: 1.9rem;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+/* A tag's small swatch for recoloring that person */
+.tag-color {
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
 /* Tagged people, each with a button to remove them */
 .people-field {
   display: flex;

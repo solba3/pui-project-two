@@ -9,25 +9,59 @@
 // - The ▾ button lists saved names to tick on and off, plus "Add a new person".
 // - A name matching a saved one apart from capitals uses the saved spelling,
 //   so the same person is always sorted and shown the same way.
+// - A color picker beside the box chooses the color for the name being typed
+//   (black to start). Typing an existing name selects that person's color,
+//   which can still be changed. Each tag has a small swatch to recolor them.
 
 // Joins names into a phrase: "Mom", "Mom and Grandpa", "Mom, Grandpa, and Zoe".
 function formatNames(names) {
   return new Intl.ListFormat(undefined, { style: 'long', type: 'conjunction' }).format(names);
 }
 
+// The same phrase as page content, with each name in its person's color.
+// colors is a Map of lowercase name -> color; names without one keep the text color.
+function namesWithColors(names, colors) {
+  const parts = new Intl.ListFormat(undefined, { style: 'long', type: 'conjunction' }).formatToParts(names);
+  const fragment = document.createDocumentFragment();
+  parts.forEach((part) => {
+    if (part.type === 'element') {
+      fragment.append(coloredName(part.value, colors));
+    } else {
+      fragment.append(part.value);
+    }
+  });
+  return fragment;
+}
+
+// One name in its person's color.
+function coloredName(name, colors) {
+  const span = document.createElement('span');
+  span.className = 'person-name';
+  span.textContent = name;
+  const color = colors.get(name.toLowerCase());
+  if (color) span.style.color = color;
+  return span;
+}
+
+const DEFAULT_COLOR = '#000000';
+
 function createPeopleField(root, { inputId, onChange = () => {} }) {
   const listId = `${inputId}-options`;
   root.classList.add('people-field');
   root.innerHTML = `
     <ul class="people-tags" aria-label="Chosen people"></ul>
-    <div class="name-field">
-      <span class="name-preview" aria-hidden="true"><span class="name-preview-typed"></span><span class="name-preview-rest"></span></span>
-      <input type="text" id="${inputId}" autocomplete="off" role="combobox"
-        aria-autocomplete="both" aria-expanded="false" aria-controls="${listId}">
-      <button type="button" class="name-toggle" aria-label="Choose saved names"
-        aria-expanded="false" aria-controls="${listId}" tabindex="-1" hidden>&#9662;</button>
-      <ul id="${listId}" class="name-options" role="listbox" aria-multiselectable="true"
-        aria-label="Saved names" hidden></ul>
+    <div class="name-row">
+      <div class="name-field">
+        <span class="name-preview" aria-hidden="true"><span class="name-preview-typed"></span><span class="name-preview-rest"></span></span>
+        <input type="text" id="${inputId}" autocomplete="off" role="combobox"
+          aria-autocomplete="both" aria-expanded="false" aria-controls="${listId}">
+        <button type="button" class="name-toggle" aria-label="Choose saved names"
+          aria-expanded="false" aria-controls="${listId}" tabindex="-1" hidden>&#9662;</button>
+        <ul id="${listId}" class="name-options" role="listbox" aria-multiselectable="true"
+          aria-label="Saved names" hidden></ul>
+      </div>
+      <input type="color" class="name-color" value="${DEFAULT_COLOR}"
+        aria-label="Color for this person" title="Choose a color for this person">
     </div>`;
 
   const tagList = root.querySelector('.people-tags');
@@ -36,14 +70,48 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
   const optionList = root.querySelector('.name-options');
   const previewTyped = root.querySelector('.name-preview-typed');
   const previewRest = root.querySelector('.name-preview-rest');
+  const picker = root.querySelector('.name-color');
 
   let savedNames = [];    // A-Z
   let chosen = [];        // names tagged so far
   let suggestedName = ''; // the saved name being previewed, if any
   let activeOption = -1;  // the option highlighted with the arrow keys
 
+  let savedColors = new Map(); // lowercase name -> color saved in the archive
+  let chosenColors = new Map(); // lowercase name -> color picked on this form
+  let draftColor = DEFAULT_COLOR; // color picked for a new name still being typed
+
   const sameName = (a, b) => a.toLowerCase() === b.toLowerCase();
   const isChosen = (name) => chosen.some((other) => sameName(other, name));
+
+  // ---- Colors ----
+
+  // The color for a known person: picked here, or else saved in the archive.
+  function knownColor(name) {
+    const key = name.toLowerCase();
+    return chosenColors.get(key) || savedColors.get(key);
+  }
+
+  const colorFor = (name) => knownColor(name) || DEFAULT_COLOR;
+
+  // The picker shows the color for the name being typed: an existing person's
+  // color, or the one picked for a new name.
+  function syncPicker() {
+    const typed = input.value.trim();
+    picker.value = (typed && knownColor(typed)) || draftColor;
+    picker.setAttribute('aria-label', `Color for ${typed || 'this person'}`);
+  }
+
+  picker.addEventListener('input', () => {
+    const typed = input.value.trim();
+    if (typed && knownColor(typed)) {
+      chosenColors.set(typed.toLowerCase(), picker.value); // recolor an existing person
+    } else {
+      draftColor = picker.value; // for the new name being typed
+    }
+    renderTags();
+    renderOptions();
+  });
 
   // ---- Tags ----
 
@@ -52,6 +120,21 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
       const tag = document.createElement('li');
       const label = document.createElement('span');
       label.textContent = name;
+      label.style.color = colorFor(name);
+
+      // A small swatch to recolor this person.
+      const swatch = document.createElement('input');
+      swatch.type = 'color';
+      swatch.className = 'tag-color';
+      swatch.value = colorFor(name);
+      swatch.setAttribute('aria-label', `Color for ${name}`);
+      swatch.title = `Color for ${name}`;
+      swatch.addEventListener('input', () => {
+        chosenColors.set(name.toLowerCase(), swatch.value);
+        label.style.color = swatch.value;
+        renderOptions();
+        syncPicker();
+      });
 
       const remove = document.createElement('button');
       remove.type = 'button';
@@ -63,7 +146,7 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
         input.focus();
       });
 
-      tag.append(label, remove);
+      tag.append(swatch, label, remove);
       return tag;
     }));
     tagList.hidden = chosen.length === 0;
@@ -80,8 +163,15 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
     if (!typed) return;
     const name = savedNames.find((saved) => sameName(saved, typed)) || typed;
     if (!isChosen(name)) chosen.push(name);
+
+    // A new person takes the color picked for them; the picker then starts
+    // over at black for the next name.
+    if (!knownColor(name)) chosenColors.set(name.toLowerCase(), draftColor);
+    draftColor = DEFAULT_COLOR;
+
     input.value = '';
     updatePreview();
+    syncPicker();
     changed();
   }
 
@@ -111,6 +201,7 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
       option.setAttribute('aria-selected', String(isChosen(name)));
       option.dataset.name = name;
       option.textContent = name;
+      if (knownColor(name)) option.style.color = knownColor(name);
       return option;
     });
 
@@ -170,6 +261,7 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
   input.addEventListener('input', () => {
     closeOptions();
     updatePreview();
+    syncPicker();
     onChange();
   });
   input.addEventListener('focus', updatePreview);
@@ -188,6 +280,7 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
       event.preventDefault();
       input.value = suggestedName;
       updatePreview();
+      syncPicker();
       onChange();
     } else if (event.key === 'ArrowDown' && savedNames.length) {
       event.preventDefault();
@@ -254,11 +347,31 @@ function createPeopleField(root, { inputId, onChange = () => {} }) {
       names.forEach((name) => {
         if (!isChosen(name)) chosen.push(name);
       });
+      chosenColors = new Map();
+      draftColor = DEFAULT_COLOR;
       input.value = '';
       input.placeholder = '';
       closeOptions();
       updatePreview();
+      syncPicker();
       changed();
+    },
+
+    // Colors already saved for people, as a Map of lowercase name -> color.
+    setSavedColors(colors) {
+      savedColors = new Map(colors);
+      syncPicker();
+      renderTags();
+      renderOptions();
+    },
+
+    // { name: color } for each tagged name, to save with the piece.
+    getColors() {
+      const colors = {};
+      chosen.forEach((name) => {
+        colors[name] = colorFor(name);
+      });
+      return colors;
     },
 
     // The dropdown only appears once at least one name has been saved.

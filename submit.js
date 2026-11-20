@@ -21,6 +21,13 @@ getSavedPersonNames()
     // Without saved names the field still works as a plain text box.
   });
 
+// Existing people's colors, so typing their name selects their color.
+getPersonColors()
+  .then((colors) => peopleField.setSavedColors(colors))
+  .catch(() => {
+    // Without saved colors everyone starts at black.
+  });
+
 // The collected date defaults to today, and dates after today can't be picked.
 const dateInput = document.getElementById('piece-date');
 
@@ -103,6 +110,7 @@ submitForm.addEventListener('submit', async (event) => {
 
   try {
     await savePiece(piece);
+    await savePersonColors(peopleField.getColors());
     window.location.href = 'index.html';
   } catch (error) {
     submitStatus.textContent = 'Sorry, this piece could not be saved. Please try again.';
