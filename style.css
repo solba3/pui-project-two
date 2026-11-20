@@ -83,6 +83,20 @@ label {
 .postcard h1 {
   grid-area: heading;
   margin: 0 0 1.75rem;
+  padding-right: 9rem; /* clear of the "Gift Idea?" box in the corner */
+}
+
+/* "Gift Idea?" in the card's top-right corner, sharing the heading's row */
+.postcard .gift-toggle {
+  grid-row: 1;
+  grid-column: 1 / -1;
+  justify-self: end;
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  cursor: pointer;
 }
 
 .postcard-picture {
@@ -162,10 +176,21 @@ label {
   .postcard {
     grid-template-columns: 1fr;
     grid-template-areas:
+      "gift"
       "heading"
       "picture"
       "writing";
     padding: 1.5rem;
+  }
+
+  /* Above the heading, still at the right */
+  .postcard .gift-toggle {
+    grid-area: gift;
+    margin-bottom: 0.75rem;
+  }
+
+  .postcard h1 {
+    padding-right: 0;
   }
 
   .postcard-picture {
@@ -530,6 +555,19 @@ label {
   grid-template-columns: repeat(auto-fit, clamp(140px, 40vw, 220px));
   justify-content: center;
   gap: 2rem 1.5rem;
+}
+
+/* The date under a grid piece, at half the size of the names beside it */
+.piece-date {
+  font-size: 50%;
+}
+
+/* Gift ideas: a thin black outline around the picture, with a little space
+   between them, and the same rounded corners as the catalogue books */
+.piece-frame.is-gift img {
+  padding: 6px;
+  border: 1px solid #000000;
+  border-radius: 8px;
 }
 
 .piece-tile {
