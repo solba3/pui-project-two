@@ -367,8 +367,8 @@ label {
 /* The small circle before a person's name, in their color */
 .person-dot {
   display: inline-block;
-  width: 0.55em;
-  height: 0.55em;
+  width: 0.25em;
+  height: .25em;
   margin-inline-end: 0.35em;
   border-radius: 50%;
   background: currentColor;
