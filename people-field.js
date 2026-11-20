@@ -33,14 +33,22 @@ function namesWithColors(names, colors) {
   return fragment;
 }
 
-// One name in its person's color.
+// One name in its person's color, after a small circle of the same color.
 function coloredName(name, colors) {
   const span = document.createElement('span');
   span.className = 'person-name';
-  span.textContent = name;
+  span.append(colorDot(), name);
   const color = colors.get(name.toLowerCase());
   if (color) span.style.color = color;
   return span;
+}
+
+// A small circle filled with the color of the text around it.
+function colorDot() {
+  const dot = document.createElement('span');
+  dot.className = 'person-dot';
+  dot.setAttribute('aria-hidden', 'true');
+  return dot;
 }
 
 const DEFAULT_COLOR = '#000000';
