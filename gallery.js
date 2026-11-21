@@ -66,6 +66,13 @@ function formatDate(dateString) {
   });
 }
 
+// Shows a YYYY-MM-DD date as MM/DD/YY, like "05/03/24", for the grid. The
+// carousel, with the full descriptions, writes the date out in full.
+function formatShortDate(dateString) {
+  const [year, month, day] = dateString.split('-');
+  return `${month}/${day}/${year.slice(-2)}`;
+}
+
 // Names that differ only in capitals belong to the same person.
 function personKey(name) {
   return name.toLowerCase();
@@ -114,7 +121,7 @@ function renderGrid() {
     details.className = 'piece-details';
     const date = document.createElement('span');
     date.className = 'piece-date';
-    date.textContent = formatDate(collectedDate(piece));
+    date.textContent = formatShortDate(collectedDate(piece));
     details.append(namesWithColors(getPiecePeople(piece), personColors), date); // the date sits on its own line below
 
     tile.append(frame, title, details);
