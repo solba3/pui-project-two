@@ -71,6 +71,57 @@ var displayImage = document.getElementById("display-image");
 
 } 
 
+// Dragging a picture onto the preview chooses it, as the "Choose File" button
+// does. The preview is highlighted while a file is held over it.
+const photoDrop = document.getElementById('photo-drop');
+const photoCaption = document.getElementById('photo-caption');
+const imageInput = document.getElementById('piece-image');
+const PHOTO_CAPTION = 'upload file here';
+const carriesFiles = (event) => [...event.dataTransfer.types].includes('Files');
+
+photoDrop.addEventListener('dragover', (event) => {
+  if (!carriesFiles(event)) return;
+  event.preventDefault(); // allows the drop
+  event.dataTransfer.dropEffect = 'copy';
+  photoDrop.classList.add('is-drag-over');
+});
+
+photoDrop.addEventListener('dragleave', (event) => {
+  if (!photoDrop.contains(event.relatedTarget)) photoDrop.classList.remove('is-drag-over');
+});
+
+photoDrop.addEventListener('drop', (event) => {
+  event.preventDefault();
+  photoDrop.classList.remove('is-drag-over');
+
+  const file = [...event.dataTransfer.files].find((item) => item.type.startsWith('image/'));
+  if (!file) {
+    photoCaption.textContent = "that isn't an image: please drop a picture";
+    return;
+  }
+
+  // Put the dropped picture in the file field, so it is saved like a chosen one.
+  const chosen = new DataTransfer();
+  chosen.items.add(file);
+  imageInput.files = chosen.files;
+  photoCaption.textContent = PHOTO_CAPTION;
+  handleImageUpload();
+});
+
+imageInput.addEventListener('change', () => {
+  photoCaption.textContent = PHOTO_CAPTION;
+});
+
+// A file dropped anywhere else on the page would make the browser open it,
+// leaving the form and losing what was typed, so it is ignored.
+['dragover', 'drop'].forEach((type) => {
+  window.addEventListener(type, (event) => {
+    if (!carriesFiles(event) || photoDrop.contains(event.target)) return;
+    event.preventDefault();
+    if (type === 'dragover') event.dataTransfer.dropEffect = 'none';
+  });
+});
+
 // Save the piece with today's date, then go to the archive to see it.
 const submitForm = document.getElementById('submit-form');
 const submitStatus = document.getElementById('submit-status');

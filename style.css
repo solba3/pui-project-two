@@ -153,9 +153,33 @@ label {
   height: auto;
 }
 
-/* Until an image is chosen, the frame stays empty */
+/* Until an image is chosen, the frame shows only its caption */
 .postcard-photo img[hidden] {
   display: none;
+}
+
+/* The preview opens the file chooser when clicked, with the "Choose File"
+   button below it */
+.postcard .postcard-photo {
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+}
+
+.photo-caption {
+  padding: 0 1rem;
+  color: GrayText;
+  text-align: center;
+}
+
+.postcard-photo:has(img:not([hidden])) .photo-caption {
+  display: none;
+}
+
+/* While a file is dragged over the preview */
+.postcard-photo.is-drag-over {
+  border-style: solid;
+  border-color: currentColor;
+  background: #f5f5f5;
 }
 
 /* The people field, left-aligned and full width on the postcard */
