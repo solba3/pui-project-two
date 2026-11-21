@@ -406,9 +406,12 @@ label {
   background: currentColor;
 }
 
-.person-name {
+/* People's names, and the "and" and commas joining a list of them */
+.person-name,
+.people-names {
   font-family: "Cutive Mono", Courier, monospace;
-} 
+}
+
 /* Archive page */
 .archive-page {
   /* A column filling the window, so the footer sits at the bottom */
