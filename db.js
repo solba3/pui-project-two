@@ -51,11 +51,15 @@ async function savePiece(piece, { giftIdea = false } = {}) {
 }
 
 // Saves changes to a piece that is already in the archive.
-async function updatePiece(piece) {
+// With giftIdea true or false, its gift idea record is added or removed in the
+// same save.
+async function updatePiece(piece, { giftIdea } = {}) {
   const db = await openArchive();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const transaction = db.transaction([STORE_NAME, GIFT_STORE], 'readwrite');
     transaction.objectStore(STORE_NAME).put(piece);
+    if (giftIdea === true) transaction.objectStore(GIFT_STORE).put({ id: piece.id });
+    if (giftIdea === false) transaction.objectStore(GIFT_STORE).delete(piece.id);
     transaction.oncomplete = () => {
       db.close();
       resolve();

@@ -528,6 +528,7 @@ label {
 
 /* A square box that fits its image inside without cropping or stretching */
 .piece-frame {
+  position: relative; /* for the gift idea bookmark */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -566,12 +567,21 @@ label {
   font-size: 50%;
 }
 
-/* Gift ideas: a thin black outline around the picture, with a little space
-   between them, and the same rounded corners as the catalogue books */
-.piece-frame.is-gift img {
-  padding: 6px;
-  border: 1px solid #000000;
-  border-radius: 8px;
+/* Gift ideas: a white bookmark hanging from the picture's top edge near its
+   left corner (placed and sized by gallery.js, as a share of the picture).
+   The faint shadow keeps it visible on light pictures. */
+.piece-frame .bookmark {
+  position: absolute;
+  display: none;
+  height: auto;
+  aspect-ratio: 10 / 14;
+  fill: #ffffff;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
+
+.piece-frame.is-gift .bookmark {
+  display: block;
 }
 
 .piece-tile {

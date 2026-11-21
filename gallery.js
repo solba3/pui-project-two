@@ -111,7 +111,7 @@ function renderGrid() {
     fitInSquare(image);
     image.src = imageUrls.get(piece.id);
     image.alt = piece.title;
-    frame.append(image);
+    frame.append(image, createBookmark());
 
     const title = document.createElement('span');
     title.className = 'piece-title';
@@ -218,11 +218,41 @@ function swingInMainImage(direction) {
 }
 
 // Marks a picture taller than it is wide, so it fills its square's height
-// instead of its width.
+// instead of its width, and places its square's bookmark on the picture.
 function fitInSquare(image) {
   image.addEventListener('load', () => {
     image.classList.toggle('is-tall', image.naturalHeight > image.naturalWidth);
+    placeBookmark(image);
   });
+}
+
+// A bookmark, filled white, marking a gift idea. Every square has one; it
+// shows only on gift ideas (.is-gift).
+function createBookmark() {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'bookmark');
+  svg.setAttribute('viewBox', '0 0 10 14');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Gift idea');
+  const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  shape.setAttribute('d', 'M0 0H10V14L5 10.5L0 14Z');
+  svg.append(shape);
+  return svg;
+}
+
+// The picture fills its square's width (or height, if tall) and is centered,
+// so its edges can be worked out from its shape. The bookmark hangs from the
+// picture's top edge near its left corner, at 12% of the picture's width.
+// Everything is a percentage of the square, so it scales with the picture.
+function placeBookmark(image) {
+  const bookmark = image.parentElement.querySelector('.bookmark');
+  if (!bookmark || !image.naturalWidth) return;
+  const ratio = image.naturalWidth / image.naturalHeight;
+  const width = ratio >= 1 ? 100 : 100 * ratio;  // the picture's share of the square
+  const height = ratio >= 1 ? 100 / ratio : 100;
+  bookmark.style.left = `${(100 - width) / 2 + width * 0.06}%`;
+  bookmark.style.top = `${(100 - height) / 2}%`;
+  bookmark.style.width = `${width * 0.12}%`;
 }
 
 // The view is kept in the address (#carousel, #catalogue or #floating), so a
@@ -290,6 +320,7 @@ const carouselFrame = document.querySelector('.carousel-frame');
   peekPrev.querySelector('img'),
   peekNext.querySelector('img'),
 ].forEach(fitInSquare);
+[carouselFrame, peekPrev, peekNext].forEach((frame) => frame.append(createBookmark()));
 peekPrev.addEventListener('click', () => moveCarousel(-1));
 peekNext.addEventListener('click', () => moveCarousel(1));
 
@@ -533,6 +564,7 @@ function startEditing() {
 
   editing = true;
   editTitle.value = piece.title;
+  document.getElementById('edit-gift-idea').checked = giftIdeaIds.has(piece.id);
 
   // Each person's box starts with what was written for them. Older pieces have
   // one description for everyone, so each box starts with that.
@@ -646,6 +678,7 @@ editForm.addEventListener('submit', async (event) => {
 
   const piece = pieces[carouselIndex];
   const people = editPeople.getNames();
+  const giftIdea = document.getElementById('edit-gift-idea').checked;
   const changes = {
     title: editTitle.value.trim(),
     people,
@@ -666,7 +699,7 @@ editForm.addEventListener('submit', async (event) => {
   editStatus.textContent = 'Saving…';
   const colors = editPeople.getColors();
   try {
-    await updatePiece(updated);
+    await updatePiece(updated, { giftIdea });
     await savePersonColors(colors);
   } catch (error) {
     editStatus.textContent = 'Sorry, the changes could not be saved. Please try again.';
@@ -675,6 +708,11 @@ editForm.addEventListener('submit', async (event) => {
 
   // The same object is in allPieces, so every view picks up the changes.
   Object.assign(piece, changes);
+  if (giftIdea) {
+    giftIdeaIds.add(piece.id);
+  } else {
+    giftIdeaIds.delete(piece.id);
+  }
   delete piece.person;
   delete piece.description;
   Object.entries(colors).forEach(([name, color]) => personColors.set(personKey(name), color));
@@ -831,7 +869,7 @@ function renderFloating() {
     image.src = imageUrls.get(piece.id);
     image.alt = '';
     image.draggable = false; // so dragging moves the piece, not a copy of the image
-    frame.append(image);
+    frame.append(image, createBookmark());
     tile.append(frame);
     return tile;
   });
