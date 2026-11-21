@@ -242,7 +242,7 @@ function createBookmark() {
 
 // The picture fills its square's width (or height, if tall) and is centered,
 // so its edges can be worked out from its shape. The bookmark hangs from the
-// picture's top edge near its left corner, at 12% of the picture's width.
+// picture's top edge near its left corner, at 9% of the picture's width.
 // Everything is a percentage of the square, so it scales with the picture.
 function placeBookmark(image) {
   const bookmark = image.parentElement.querySelector('.bookmark');
@@ -252,7 +252,7 @@ function placeBookmark(image) {
   const height = ratio >= 1 ? 100 / ratio : 100;
   bookmark.style.left = `${(100 - width) / 2 + width * 0.06}%`;
   bookmark.style.top = `${(100 - height) / 2}%`;
-  bookmark.style.width = `${width * 0.12}%`;
+  bookmark.style.width = `${width * 0.09}%`;
 }
 
 // The view is kept in the address (#carousel, #catalogue or #floating), so a
