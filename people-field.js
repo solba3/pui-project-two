@@ -20,17 +20,20 @@ function formatNames(names) {
 
 // The same phrase as page content, with each name in its person's color.
 // colors is a Map of lowercase name -> color; names without one keep the text color.
+// The whole list is wrapped in .people-names, so the joining words ("and",
+// commas) share the names' font.
 function namesWithColors(names, colors) {
   const parts = new Intl.ListFormat(undefined, { style: 'long', type: 'conjunction' }).formatToParts(names);
-  const fragment = document.createDocumentFragment();
+  const list = document.createElement('span');
+  list.className = 'people-names';
   parts.forEach((part) => {
     if (part.type === 'element') {
-      fragment.append(coloredName(part.value, colors));
+      list.append(coloredName(part.value, colors));
     } else {
-      fragment.append(part.value);
+      list.append(part.value);
     }
   });
-  return fragment;
+  return list;
 }
 
 // One name in its person's color.
