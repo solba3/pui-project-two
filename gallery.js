@@ -16,6 +16,7 @@ let pieces = [];        // the pieces being shown: all of them, or one person's
 let personFilter = new URLSearchParams(location.search).get('person') || ''; // name shown, or '' for all
 let imageUrls = new Map(); // piece id -> URL for its stored image
 let personColors = new Map(); // lowercase name -> the color chosen for that person
+let giftIdeaIds = new Set();  // ids of pieces marked "Gift Idea?", outlined in every view
 let carouselIndex = 0;  // which piece the carousel is showing
 
 function compareText(a, b) {
@@ -98,6 +99,7 @@ function renderGrid() {
 
     const frame = document.createElement('span');
     frame.className = 'piece-frame';
+    frame.classList.toggle('is-gift', giftIdeaIds.has(piece.id));
     const image = document.createElement('img');
     fitInSquare(image);
     image.src = imageUrls.get(piece.id);
@@ -110,7 +112,10 @@ function renderGrid() {
 
     const details = document.createElement('span');
     details.className = 'piece-details';
-    details.append(namesWithColors(getPiecePeople(piece), personColors), ` · ${formatDate(collectedDate(piece))}`);
+    const date = document.createElement('span');
+    date.className = 'piece-date';
+    date.textContent = formatDate(collectedDate(piece));
+    details.append(namesWithColors(getPiecePeople(piece), personColors), ' · ', date);
 
     tile.append(frame, title, details);
     item.append(tile);
@@ -123,6 +128,7 @@ function renderCarousel() {
   if (!piece) return;
 
   document.getElementById('carousel-title').replaceChildren(piece.title, peopleDots(getPiecePeople(piece), personColors));
+  carouselFrame.classList.toggle('is-gift', giftIdeaIds.has(piece.id));
   document.getElementById('carousel-person').replaceChildren(namesWithColors(getPiecePeople(piece), personColors));
 
   const image = document.getElementById('carousel-image');
@@ -169,6 +175,7 @@ function wrapIndex(index) {
 // Shows a neighbouring piece in a sneak-peek square, or hides the square
 // (keeping its space, so the main image stays centered) when there is none.
 function setPeek(peek, piece) {
+  peek.classList.toggle('is-gift', Boolean(piece) && giftIdeaIds.has(piece.id));
   peek.style.visibility = piece ? 'visible' : 'hidden';
   if (piece) peek.querySelector('img').src = imageUrls.get(piece.id);
 }
@@ -299,6 +306,13 @@ async function loadArchive() {
     personColors = await getPersonColors();
   } catch (error) {
     personColors = new Map();
+  }
+
+  // Without the gift ideas, no piece is outlined.
+  try {
+    giftIdeaIds = await getGiftIdeaIds();
+  } catch (error) {
+    giftIdeaIds = new Set();
   }
 
   if (allPieces.length === 0) {
@@ -749,6 +763,7 @@ function renderFloating() {
 
     const frame = document.createElement('span');
     frame.className = 'piece-frame';
+    frame.classList.toggle('is-gift', giftIdeaIds.has(piece.id));
     Object.entries(look.drift).forEach(([name, value]) => frame.style.setProperty(name, value));
     const image = document.createElement('img');
     fitInSquare(image);

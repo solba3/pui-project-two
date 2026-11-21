@@ -109,7 +109,7 @@ submitForm.addEventListener('submit', async (event) => {
   submitStatus.textContent = 'Saving…';
 
   try {
-    await savePiece(piece);
+    await savePiece(piece, { giftIdea: document.getElementById('gift-idea').checked });
     await savePersonColors(peopleField.getColors());
     window.location.href = 'index.html';
   } catch (error) {
