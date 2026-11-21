@@ -107,9 +107,19 @@
         <div class="edit-actions">
           <button type="submit">Save</button>
           <button type="button" id="edit-cancel">Cancel</button>
+          <button type="button" id="edit-delete">Delete</button>
         </div>
         <p id="edit-status" role="status"></p>
       </form>
+
+      <!-- Asks before deleting the piece being edited -->
+      <dialog id="delete-dialog" class="confirm-dialog" aria-labelledby="delete-dialog-text">
+        <p id="delete-dialog-text">Are you sure you want to delete this memory?</p>
+        <div class="dialog-actions">
+          <button type="button" id="delete-confirm">I'm sure</button>
+          <button type="button" id="delete-cancel" autofocus>Go back</button>
+        </div>
+      </dialog>
     </section>
 
     <!-- Catalogue view: each person's album as a book spine on a shelf, A-Z -->

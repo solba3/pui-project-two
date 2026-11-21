@@ -559,6 +559,7 @@ label {
 
 /* The date under a grid piece, at half the size of the names beside it */
 .piece-date {
+  display: block; /* on its own line, under the names */
   font-size: 50%;
 }
 
@@ -705,6 +706,33 @@ label {
   .floating-piece .piece-frame {
     animation: none;
   }
+}
+
+/* "Are you sure you want to delete this memory?": a pop-up with the same
+   border and corners as the submission card */
+.confirm-dialog {
+  max-width: min(26rem, calc(100vw - 2rem));
+  padding: 1.75rem 2rem;
+  border: 2px solid currentColor;
+  border-radius: 8px;
+  background: #ffffff;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.confirm-dialog p {
+  margin: 0 0 1.25rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 /* Editing a piece in the carousel */

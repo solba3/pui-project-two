@@ -115,7 +115,7 @@ function renderGrid() {
     const date = document.createElement('span');
     date.className = 'piece-date';
     date.textContent = formatDate(collectedDate(piece));
-    details.append(namesWithColors(getPiecePeople(piece), personColors), ' · ', date);
+    details.append(namesWithColors(getPiecePeople(piece), personColors), date); // the date sits on its own line below
 
     tile.append(frame, title, details);
     item.append(tile);
@@ -567,6 +567,60 @@ editButton.addEventListener('click', startEditing);
 
 document.getElementById('edit-cancel').addEventListener('click', () => {
   stopEditing();
+  editButton.focus();
+});
+
+// Deleting: "Delete" asks first in a pop-up. "Go back" (where focus starts, so
+// Enter can't delete by accident) or Escape returns to editing; "I'm sure"
+// removes the piece from the archive and from every view.
+const deleteDialog = document.getElementById('delete-dialog');
+
+document.getElementById('edit-delete').addEventListener('click', () => deleteDialog.showModal());
+document.getElementById('delete-cancel').addEventListener('click', () => deleteDialog.close());
+
+document.getElementById('delete-confirm').addEventListener('click', async () => {
+  const piece = pieces[carouselIndex];
+  try {
+    await deletePiece(piece.id);
+  } catch (error) {
+    deleteDialog.close();
+    editStatus.textContent = 'Sorry, this piece could not be deleted. Please try again.';
+    return;
+  }
+
+  deleteDialog.close();
+  stopEditing();
+
+  allPieces = allPieces.filter((other) => other !== piece);
+  giftIdeaIds.delete(piece.id);
+  floatingLooks.delete(piece.id);
+  URL.revokeObjectURL(imageUrls.get(piece.id));
+  imageUrls.delete(piece.id);
+
+  // That was the last piece: show the empty archive.
+  if (allPieces.length === 0) {
+    setPeopleOpen(false);
+    peopleToggle.hidden = true;
+    filterStatus.hidden = true;
+    showMessage('No pieces yet. <a href="submit.html">Add your first piece.</a>');
+    return;
+  }
+
+  // If that was the last piece for the person being shown, show everyone.
+  if (personFilter && !allPieces.some((other) => isTaggedWith(other, personFilter))) {
+    personFilter = '';
+    history.replaceState(null, '', location.pathname + location.hash);
+  }
+
+  // Stay at the same place in the carousel, which now shows the next piece.
+  const position = carouselIndex;
+  sortAndFilterPieces();
+  carouselIndex = Math.min(position, pieces.length - 1);
+  renderGrid();
+  renderCarousel();
+  renderPeopleNav();
+  renderCatalogue();
+  updateFilterStatus();
   editButton.focus();
 });
 

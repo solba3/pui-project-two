@@ -67,6 +67,24 @@ async function updatePiece(piece) {
   });
 }
 
+// Deletes a piece, and its gift idea record if it has one, in one go.
+async function deletePiece(id) {
+  const db = await openArchive();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME, GIFT_STORE], 'readwrite');
+    transaction.objectStore(STORE_NAME).delete(id);
+    transaction.objectStore(GIFT_STORE).delete(id);
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error);
+    };
+  });
+}
+
 // The people a piece is tagged with. Pieces saved before several people could
 // be tagged have a single "person" instead of a "people" list.
 function getPiecePeople(piece) {
