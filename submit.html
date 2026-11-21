@@ -32,10 +32,12 @@
     <div class="postcard-picture">
       <div class="field">
         <label for="piece-image">Image of what you captured</label>
+        <!-- The preview: click it, or drag a picture onto it, to choose one -->
+        <label class="postcard-photo" id="photo-drop" for="piece-image">
+          <img id="display-image" height="500" src=" " alt="user's submitted object" hidden>
+          <span class="photo-caption" id="photo-caption">upload file here</span>
+        </label>
         <input type="file" id="piece-image" onchange="handleImageUpload()" name="image" accept="image/*" required>
-      </div>
-      <div class="postcard-photo">
-        <img id="display-image" height="500" src=" " alt="user's submitted object" hidden>
       </div>
     </div>
 
