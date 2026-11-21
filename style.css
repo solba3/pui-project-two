@@ -37,8 +37,12 @@ label {
 }
 
 /* Fade in while floating up from below (used on both pages) */
+/* "backwards" holds the start (hidden, lowered) until the animation runs, and
+   afterwards lets the element go back to its own style. Holding the end as
+   well would leave a transform on it, which keeps a child such as "Show
+   people" from sitting above the people sidebar. */
 .float-in {
-  animation: float-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: float-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes float-in {
@@ -428,17 +432,7 @@ label {
 }
 
 /* "Add a piece", centered at the bottom of the window */
-.archive-footer {
-  padding-top: 2rem;
-}
-
 /* People sidebar: slides in from the left */
-.people-toggle {
-  position: fixed;
-  z-index: 11;
-  top: 1rem;
-  left: 1rem;
-}
 
 .people-nav {
   position: fixed;
@@ -485,13 +479,6 @@ label {
   font-weight: bold;
 }
 
-/* Narrow screens: leave room above the controls for the toggle button */
-@media (max-width: 899px) {
-  .archive-page {
-    padding-top: 4rem;
-  }
-}
-
 /* Wide screens: the open sidebar moves the page over instead of covering it */
 @media (min-width: 900px) {
   .archive-page {
@@ -517,13 +504,58 @@ label {
   }
 }
 
+/* The top row: "Show people" at the left, the views and order centered,
+   "Add a piece" at the right, all lined up */
 .archive-controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.archive-views {
+  grid-column: 2;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   gap: 1rem 2rem;
-  margin-bottom: 2rem;
+}
+
+.people-toggle {
+  grid-column: 1;
+  justify-self: start;
+  position: relative;
+  z-index: 11; /* above the sidebar, which slides over it on narrow screens */
+}
+
+.add-piece-link {
+  grid-column: 3;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+/* Narrow screens: "Show people" and "Add a piece" share the first row, with
+   the views and order below */
+@media (max-width: 899px) {
+  .archive-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .people-toggle,
+  .add-piece-link {
+    grid-row: 1;
+  }
+
+  .add-piece-link {
+    grid-column: 2;
+  }
+
+  .archive-views {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 }
 
 /* A square box that fits its image inside without cropping or stretching */
@@ -568,15 +600,13 @@ label {
 }
 
 /* Gift ideas: a white bookmark hanging from the picture's top edge near its
-   left corner (placed and sized by gallery.js, as a share of the picture).
-   The faint shadow keeps it visible on light pictures. */
+   left corner (placed and sized by gallery.js, as a share of the picture). */
 .piece-frame .bookmark {
   position: absolute;
   display: none;
   height: auto;
   aspect-ratio: 10 / 14;
   fill: #ffffff;
-  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.45));
   pointer-events: none;
 }
 

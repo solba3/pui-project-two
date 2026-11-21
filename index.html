@@ -17,7 +17,6 @@
 
 <body class="archive-page">
   <!-- Sidebar of everyone in the archive; choosing a name shows only their pieces -->
-  <button type="button" id="people-toggle" class="people-toggle" aria-controls="people-nav" aria-expanded="false" hidden>Show people</button>
   <nav id="people-nav" class="people-nav" aria-label="People">
     <div class="float-in">
       <h2>People</h2>
@@ -25,7 +24,12 @@
     </div>
   </nav>
 
+  <!-- One row: "Show people" on the left, the views and order in the middle,
+       "Add a piece" on the right -->
   <header class="archive-controls float-in">
+    <button type="button" id="people-toggle" class="people-toggle" aria-controls="people-nav" aria-expanded="false" hidden>Show people</button>
+
+    <div class="archive-views">
     <div class="view-toggle" role="group" aria-label="View">
       <button type="button" data-view="grid" aria-pressed="true">Pieces of Us</button>
       <button type="button" data-view="carousel" aria-pressed="false">Looking Back</button>
@@ -52,6 +56,9 @@
         <option value="za">Name (Z–A)</option>
       </select>
     </div>
+    </div>
+
+    <a href="submit.html" class="add-piece-link">Add a piece</a>
   </header>
 
   <main>
@@ -142,10 +149,6 @@
       </div>
     </section>
   </main>
-
-  <footer class="archive-footer float-in">
-    <a href="submit.html">Add a piece</a>
-  </footer>
 
   <script src="db.js"></script>
   <script src="people-field.js"></script>
