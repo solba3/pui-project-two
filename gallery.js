@@ -650,8 +650,7 @@ document.getElementById('delete-confirm').addEventListener('click', async () => 
   giftIdeaIds.delete(piece.id);
   floatingLooks.delete(piece.id);
   URL.revokeObjectURL(imageUrls.get(piece.id));
-  if (halftoneUrls.has(piece.id)) URL.revokeObjectURL(halftoneUrls.get(piece.id));
-  halftoneUrls.delete(piece.id);
+  forgetHalftone(piece.id);
   imageUrls.delete(piece.id);
 
   // That was the last piece: show the empty archive.
@@ -752,6 +751,10 @@ editForm.addEventListener('submit', async (event) => {
   renderCatalogue();
   updateFilterStatus();
   editButton.focus();
+
+  // Its people or their colors may have changed, so its halftone (and any
+  // other piece sharing a recolored person) is made again.
+  if (photoFilter === 'halftone') makeMissingHalftones();
 });
 
 // ---------------------------------------------------------------------------
@@ -1170,20 +1173,38 @@ new ResizeObserver(() => {
 // Photo filter: a look for every piece's photo in the grid, carousel and
 // Mindscape, kept when switching views (and remembered by this browser).
 // - Vintage: a warm, faded film look, done with a CSS filter (style.css).
-// - Color Halftone: each photo redrawn as a screen of dots in its own colors,
-//   bigger where the photo is darker. Each piece's halftone is made once, in
-//   the browser, and kept for the visit; the saved photos are never changed.
+// - Color Halftone: each photo redrawn as a fine texture of dots in the colors
+//   of the people tagged on it, bigger where the photo is darker. Each piece's
+//   halftone is made in the browser and kept for the visit (made again if its
+//   people or their colors change); the saved photos are never changed.
 
 const photoFilterSelect = document.getElementById('photo-filter');
 const PHOTO_FILTER_KEY = 'archive-photo-filter';
 const PHOTO_FILTERS = ['none', 'vintage', 'halftone'];
-const halftoneUrls = new Map(); // piece id -> URL of its color halftone, once made
+const halftones = new Map(); // piece id -> { colors, url } of its halftone, once made
 let photoFilter = 'none';
+
+// The colors a piece's halftone is drawn in: each tagged person's color
+// (black for anyone without one), each color once.
+function halftoneColors(piece) {
+  const colors = getPiecePeople(piece).map((name) => personColors.get(personKey(name)) || DEFAULT_COLOR);
+  return [...new Set(colors.map((color) => color.toLowerCase()))];
+}
+
+// A piece's halftone, if one has been made for its current colors.
+function currentHalftone(piece) {
+  const halftone = halftones.get(piece.id);
+  return halftone && halftone.colors === halftoneColors(piece).join(',') ? halftone : null;
+}
 
 // The picture to show for a piece: its halftone while that filter is on (once
 // made), otherwise its photo.
 function photoUrl(id) {
-  if (photoFilter === 'halftone' && halftoneUrls.has(id)) return halftoneUrls.get(id);
+  if (photoFilter === 'halftone') {
+    const piece = allPieces.find((other) => other.id === id);
+    const halftone = piece && currentHalftone(piece);
+    if (halftone) return halftone.url;
+  }
   return imageUrls.get(id);
 }
 
@@ -1193,6 +1214,11 @@ function refreshPhotos() {
     const url = photoUrl(Number(image.dataset.pieceId));
     if (url && image.src !== url) image.src = url;
   });
+}
+
+function forgetHalftone(id) {
+  if (halftones.has(id)) URL.revokeObjectURL(halftones.get(id).url);
+  halftones.delete(id);
 }
 
 function savedPhotoFilter() {
@@ -1214,27 +1240,42 @@ async function setPhotoFilter(filter) {
     // Not remembering is fine.
   }
   refreshPhotos();
+  if (filter === 'halftone') makeMissingHalftones();
+}
 
-  // Make any halftones still missing, swapping each in as it's ready.
-  if (filter !== 'halftone') return;
-  for (const piece of allPieces) {
-    if (halftoneUrls.has(piece.id)) continue;
+// Makes any halftones still missing (or out of date), swapping each in as
+// it's ready.
+let makingHalftones = false;
+async function makeMissingHalftones() {
+  if (makingHalftones) return;
+  makingHalftones = true;
+  for (const piece of [...allPieces]) {
+    if (photoFilter !== 'halftone') break;
+    if (currentHalftone(piece) || !imageUrls.has(piece.id)) continue;
+    const colors = halftoneColors(piece);
     try {
-      halftoneUrls.set(piece.id, await makeHalftone(imageUrls.get(piece.id)));
+      const url = await makeHalftone(imageUrls.get(piece.id), colors);
+      forgetHalftone(piece.id);
+      halftones.set(piece.id, { colors: colors.join(','), url });
     } catch (error) {
       continue; // that piece keeps its photo
     }
-    if (photoFilter === 'halftone') refreshPhotos();
+    refreshPhotos();
   }
+  makingHalftones = false;
+  // A change made while working (such as a new color) gets its turn now.
+  if (photoFilter === 'halftone' && allPieces.some((piece) => !currentHalftone(piece))) makeMissingHalftones();
 }
 
 photoFilterSelect.addEventListener('change', () => setPhotoFilter(photoFilterSelect.value));
 
-// Redraws a photo as a color halftone: a grid of dots (every other row offset
-// by half a dot, as in print), each in the average color of the patch it
-// covers and sized by how dark that patch is, on white. The dot spacing is a
-// share of the photo, so the pattern scales with it.
-function makeHalftone(url) {
+// Redraws a photo as a halftone texture in the given colors: each color gets
+// its own screen of dots, set at its own angle as in print, and the screens
+// are blended (multiplied) so several colors mix instead of covering each
+// other. A dot's size follows how dark the photo is beneath it. The dots are
+// spaced at a small share of the photo (about 120 across), so the pattern
+// scales with the picture and reads as a texture.
+function makeHalftone(url, colors) {
   return new Promise((resolve, reject) => {
     const source = new Image();
     source.onerror = reject;
@@ -1242,46 +1283,54 @@ function makeHalftone(url) {
       const scale = Math.min(1, 900 / Math.max(source.naturalWidth, source.naturalHeight));
       const width = Math.max(1, Math.round(source.naturalWidth * scale));
       const height = Math.max(1, Math.round(source.naturalHeight * scale));
+      const cell = Math.max(2, Math.max(width, height) / 120);
+
+      // How dark each patch is: draw the photo at one pixel per dot (the
+      // browser averages each patch) and read it back.
+      const columns = Math.max(1, Math.ceil(width / cell));
+      const rows = Math.max(1, Math.ceil(height / cell));
+      const small = document.createElement('canvas');
+      small.width = columns;
+      small.height = rows;
+      const smallContext = small.getContext('2d', { willReadFrequently: true });
+      smallContext.drawImage(source, 0, 0, columns, rows);
+      const pixels = smallContext.getImageData(0, 0, columns, rows).data;
+      const darkness = (x, y) => {
+        const column = Math.min(columns - 1, Math.max(0, Math.floor(x / cell)));
+        const row = Math.min(rows - 1, Math.max(0, Math.floor(y / cell)));
+        const i = (row * columns + column) * 4;
+        return 1 - (0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2]) / 255;
+      };
+
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      const context = canvas.getContext('2d', { willReadFrequently: true });
-      context.drawImage(source, 0, 0, width, height);
-      const pixels = context.getImageData(0, 0, width, height).data;
-
+      const context = canvas.getContext('2d');
       context.fillStyle = '#ffffff';
       context.fillRect(0, 0, width, height);
+      context.globalCompositeOperation = 'multiply';
 
-      const cell = Math.max(3, Math.max(width, height) / 50); // about 50 dots across
-      for (let row = 0, y = 0; y < height; row += 1, y += cell) {
-        const shift = row % 2 ? cell / 2 : 0;
-        for (let x = -shift; x < width; x += cell) {
-          // The average color of the patch under this dot.
-          let red = 0, green = 0, blue = 0, count = 0;
-          for (let py = Math.floor(y); py < Math.min(height, y + cell); py += 2) {
-            for (let px = Math.max(0, Math.floor(x)); px < Math.min(width, x + cell); px += 2) {
-              const i = (py * width + px) * 4;
-              red += pixels[i];
-              green += pixels[i + 1];
-              blue += pixels[i + 2];
-              count += 1;
-            }
+      const ANGLES = [45, 15, 75, 0, 30, 60]; // degrees, one per color
+      const reach = Math.hypot(width, height) / 2 + cell; // covers the corners at any angle
+      colors.forEach((color, index) => {
+        const angle = (ANGLES[index % ANGLES.length] * Math.PI) / 180;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        context.fillStyle = color;
+        for (let v = -reach; v <= reach; v += cell) {
+          for (let u = -reach; u <= reach; u += cell) {
+            const x = width / 2 + u * cos - v * sin;
+            const y = height / 2 + u * sin + v * cos;
+            if (x < -cell || y < -cell || x > width + cell || y > height + cell) continue;
+            // Bigger where darker, overlapping into solid color in the
+            // darkest areas; a faint speck even where it's lightest.
+            const radius = Math.min(cell * 0.62, (cell / 2) * (0.15 + Math.sqrt(darkness(x, y))));
+            context.beginPath();
+            context.arc(x, y, radius, 0, Math.PI * 2);
+            context.fill();
           }
-          if (!count) continue;
-          red /= count;
-          green /= count;
-          blue /= count;
-
-          // Darker patches get bigger dots, which just touch at their largest so
-          // even the darkest areas stay dotted; light ones keep a small dot.
-          const lightness = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
-          const radius = Math.min(cell * 0.56, (cell / 2) * (0.2 + Math.sqrt(1 - lightness)));
-          context.fillStyle = `rgb(${Math.round(red)}, ${Math.round(green)}, ${Math.round(blue)})`;
-          context.beginPath();
-          context.arc(x + cell / 2, y + cell / 2, radius, 0, Math.PI * 2);
-          context.fill();
         }
-      }
+      });
 
       canvas.toBlob((blob) => (blob ? resolve(URL.createObjectURL(blob)) : reject()), 'image/png');
     };
