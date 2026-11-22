@@ -657,9 +657,10 @@ label {
   cursor: pointer;
 }
 
-.piece-title {
-  margin-top: 0.5rem;
-  font-weight: 500;
+/* Grid: the row of dots, centered below the picture, then the date */
+.piece-tile .piece-dots {
+  justify-content: center;
+  margin: 0.5rem 0 0;
 }
 
 /* Catalogue view: books in rows, like spines on a shelf */

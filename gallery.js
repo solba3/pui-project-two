@@ -114,18 +114,21 @@ function renderGrid() {
     image.alt = piece.title;
     frame.append(image, createBookmark());
 
-    const title = document.createElement('span');
-    title.className = 'piece-title';
-    title.append(piece.title, peopleDots(getPiecePeople(piece), personColors));
+    // Below the picture: a dot for each person, centered, then the date. The
+    // title and names aren't shown, so they're given to screen readers.
+    const people = getPiecePeople(piece);
+    const dots = peopleDots(people, personColors);
+    dots.classList.add('piece-dots');
 
     const details = document.createElement('span');
     details.className = 'piece-details';
     const date = document.createElement('span');
     date.className = 'piece-date';
     date.textContent = formatShortDate(collectedDate(piece));
-    details.append(namesWithColors(getPiecePeople(piece), personColors), date); // the date sits on its own line below
+    details.append(date);
 
-    tile.append(frame, title, details);
+    tile.setAttribute('aria-label', `${piece.title}, ${formatNames(people)}, collected ${formatDate(collectedDate(piece))}${giftIdeaIds.has(piece.id) ? ', gift idea' : ''}`);
+    tile.append(frame, dots, details);
     item.append(tile);
     pieceGrid.append(item);
   });
