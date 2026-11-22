@@ -109,22 +109,26 @@ function renderGrid() {
     frame.classList.toggle('is-gift', giftIdeaIds.has(piece.id));
     const image = document.createElement('img');
     fitInSquare(image);
-    image.src = imageUrls.get(piece.id);
+    image.dataset.pieceId = piece.id;
+    image.src = photoUrl(piece.id);
     image.alt = piece.title;
     frame.append(image, createBookmark());
 
-    const title = document.createElement('span');
-    title.className = 'piece-title';
-    title.append(piece.title, peopleDots(getPiecePeople(piece), personColors));
+    // Below the picture: a dot for each person, centered, then the date. The
+    // title and names aren't shown, so they're given to screen readers.
+    const people = getPiecePeople(piece);
+    const dots = peopleDots(people, personColors);
+    dots.classList.add('piece-dots');
 
     const details = document.createElement('span');
     details.className = 'piece-details';
     const date = document.createElement('span');
     date.className = 'piece-date';
     date.textContent = formatShortDate(collectedDate(piece));
-    details.append(namesWithColors(getPiecePeople(piece), personColors), date); // the date sits on its own line below
+    details.append(date);
 
-    tile.append(frame, title, details);
+    tile.setAttribute('aria-label', `${piece.title}, ${formatNames(people)}, collected ${formatDate(collectedDate(piece))}${giftIdeaIds.has(piece.id) ? ', gift idea' : ''}`);
+    tile.append(frame, dots, details);
     item.append(tile);
     pieceGrid.append(item);
   });
@@ -139,7 +143,8 @@ function renderCarousel() {
   document.getElementById('carousel-person').replaceChildren(namesWithColors(getPiecePeople(piece), personColors));
 
   const image = document.getElementById('carousel-image');
-  image.src = imageUrls.get(piece.id);
+  image.dataset.pieceId = piece.id;
+  image.src = photoUrl(piece.id);
   image.alt = piece.title;
 
   // Peek at the neighbouring pieces, unless this is the only one.
@@ -184,7 +189,11 @@ function wrapIndex(index) {
 function setPeek(peek, piece) {
   peek.classList.toggle('is-gift', Boolean(piece) && giftIdeaIds.has(piece.id));
   peek.style.visibility = piece ? 'visible' : 'hidden';
-  if (piece) peek.querySelector('img').src = imageUrls.get(piece.id);
+  if (piece) {
+    const image = peek.querySelector('img');
+    image.dataset.pieceId = piece.id;
+    image.src = photoUrl(piece.id);
+  }
 }
 
 // Move through the carousel, wrapping around at either end.
@@ -273,6 +282,8 @@ function showView(view) {
   // The catalogue orders books by name; the other views order pieces.
   document.getElementById('sort-order-control').hidden = view === 'catalogue';
   document.getElementById('catalogue-order-control').hidden = view !== 'catalogue';
+  // The catalogue shows no photos, so it has no photo filter.
+  document.getElementById('photo-filter-control').hidden = view === 'catalogue';
 
   if (allPieces.length === 0) return;
   Object.entries(VIEWS).forEach(([name, section]) => {
@@ -376,6 +387,7 @@ async function loadArchive() {
   updateFilterStatus();
   setUpPeopleToggle();
   showView(currentView());
+  setPhotoFilter(savedPhotoFilter());
 }
 
 // ---------------------------------------------------------------------------
@@ -638,6 +650,8 @@ document.getElementById('delete-confirm').addEventListener('click', async () => 
   giftIdeaIds.delete(piece.id);
   floatingLooks.delete(piece.id);
   URL.revokeObjectURL(imageUrls.get(piece.id));
+  if (halftoneUrls.has(piece.id)) URL.revokeObjectURL(halftoneUrls.get(piece.id));
+  halftoneUrls.delete(piece.id);
   imageUrls.delete(piece.id);
 
   // That was the last piece: show the empty archive.
@@ -872,7 +886,8 @@ function renderFloating() {
     Object.entries(look.drift).forEach(([name, value]) => frame.style.setProperty(name, value));
     const image = document.createElement('img');
     fitInSquare(image);
-    image.src = imageUrls.get(piece.id);
+    image.dataset.pieceId = piece.id;
+    image.src = photoUrl(piece.id);
     image.alt = '';
     image.draggable = false; // so dragging moves the piece, not a copy of the image
     frame.append(image, createBookmark());
@@ -1150,5 +1165,128 @@ floatingViewport.addEventListener('pointermove', (event) => {
 new ResizeObserver(() => {
   if (floatingViewport.getBoundingClientRect().width !== floatingWidth) renderFloating();
 }).observe(floatingViewport);
+
+// ---------------------------------------------------------------------------
+// Photo filter: a look for every piece's photo in the grid, carousel and
+// Mindscape, kept when switching views (and remembered by this browser).
+// - Vintage: a warm, faded film look, done with a CSS filter (style.css).
+// - Color Halftone: each photo redrawn as a screen of dots in its own colors,
+//   bigger where the photo is darker. Each piece's halftone is made once, in
+//   the browser, and kept for the visit; the saved photos are never changed.
+
+const photoFilterSelect = document.getElementById('photo-filter');
+const PHOTO_FILTER_KEY = 'archive-photo-filter';
+const PHOTO_FILTERS = ['none', 'vintage', 'halftone'];
+const halftoneUrls = new Map(); // piece id -> URL of its color halftone, once made
+let photoFilter = 'none';
+
+// The picture to show for a piece: its halftone while that filter is on (once
+// made), otherwise its photo.
+function photoUrl(id) {
+  if (photoFilter === 'halftone' && halftoneUrls.has(id)) return halftoneUrls.get(id);
+  return imageUrls.get(id);
+}
+
+// Points every piece picture on the page at the right image for the filter.
+function refreshPhotos() {
+  document.querySelectorAll('img[data-piece-id]').forEach((image) => {
+    const url = photoUrl(Number(image.dataset.pieceId));
+    if (url && image.src !== url) image.src = url;
+  });
+}
+
+function savedPhotoFilter() {
+  try {
+    const saved = localStorage.getItem(PHOTO_FILTER_KEY);
+    return PHOTO_FILTERS.includes(saved) ? saved : 'none';
+  } catch (error) {
+    return 'none';
+  }
+}
+
+async function setPhotoFilter(filter) {
+  photoFilter = filter;
+  photoFilterSelect.value = filter;
+  document.body.dataset.photoFilter = filter; // style.css draws Vintage from this
+  try {
+    localStorage.setItem(PHOTO_FILTER_KEY, filter);
+  } catch (error) {
+    // Not remembering is fine.
+  }
+  refreshPhotos();
+
+  // Make any halftones still missing, swapping each in as it's ready.
+  if (filter !== 'halftone') return;
+  for (const piece of allPieces) {
+    if (halftoneUrls.has(piece.id)) continue;
+    try {
+      halftoneUrls.set(piece.id, await makeHalftone(imageUrls.get(piece.id)));
+    } catch (error) {
+      continue; // that piece keeps its photo
+    }
+    if (photoFilter === 'halftone') refreshPhotos();
+  }
+}
+
+photoFilterSelect.addEventListener('change', () => setPhotoFilter(photoFilterSelect.value));
+
+// Redraws a photo as a color halftone: a grid of dots (every other row offset
+// by half a dot, as in print), each in the average color of the patch it
+// covers and sized by how dark that patch is, on white. The dot spacing is a
+// share of the photo, so the pattern scales with it.
+function makeHalftone(url) {
+  return new Promise((resolve, reject) => {
+    const source = new Image();
+    source.onerror = reject;
+    source.onload = () => {
+      const scale = Math.min(1, 900 / Math.max(source.naturalWidth, source.naturalHeight));
+      const width = Math.max(1, Math.round(source.naturalWidth * scale));
+      const height = Math.max(1, Math.round(source.naturalHeight * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(source, 0, 0, width, height);
+      const pixels = context.getImageData(0, 0, width, height).data;
+
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, width, height);
+
+      const cell = Math.max(3, Math.max(width, height) / 50); // about 50 dots across
+      for (let row = 0, y = 0; y < height; row += 1, y += cell) {
+        const shift = row % 2 ? cell / 2 : 0;
+        for (let x = -shift; x < width; x += cell) {
+          // The average color of the patch under this dot.
+          let red = 0, green = 0, blue = 0, count = 0;
+          for (let py = Math.floor(y); py < Math.min(height, y + cell); py += 2) {
+            for (let px = Math.max(0, Math.floor(x)); px < Math.min(width, x + cell); px += 2) {
+              const i = (py * width + px) * 4;
+              red += pixels[i];
+              green += pixels[i + 1];
+              blue += pixels[i + 2];
+              count += 1;
+            }
+          }
+          if (!count) continue;
+          red /= count;
+          green /= count;
+          blue /= count;
+
+          // Darker patches get bigger dots, which just touch at their largest so
+          // even the darkest areas stay dotted; light ones keep a small dot.
+          const lightness = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+          const radius = Math.min(cell * 0.56, (cell / 2) * (0.2 + Math.sqrt(1 - lightness)));
+          context.fillStyle = `rgb(${Math.round(red)}, ${Math.round(green)}, ${Math.round(blue)})`;
+          context.beginPath();
+          context.arc(x + cell / 2, y + cell / 2, radius, 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+
+      canvas.toBlob((blob) => (blob ? resolve(URL.createObjectURL(blob)) : reject()), 'image/png');
+    };
+    source.src = url;
+  });
+}
 
 loadArchive();
