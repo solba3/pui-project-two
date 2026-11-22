@@ -437,7 +437,7 @@ label {
 /* People's names, and the "and" and commas joining a list of them */
 .person-name,
 .people-names {
-  font-family: "Cutive Mono", Courier, monospace;
+  font-family: "Jetbrains Mono", Courier, monospace;
 }
 
 /* Archive page */
