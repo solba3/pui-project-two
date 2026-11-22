@@ -720,6 +720,11 @@ label {
 }
 
 @media (max-width: 760px) {
+  /* Phones zoom with the slider instead of the buttons */
+  .zoom-controls {
+    display: none;
+  }
+
   /* Pinned to the bottom of the screen while the Mindscape is open */
   .zoom-slider-bar:not([hidden]) {
     position: fixed;
@@ -758,6 +763,13 @@ label {
   max-width: 70rem;
   margin: 1rem auto 0;
   overflow: auto;
+  /* No scrollbars: a zoomed-in view is moved by dragging its background,
+     scrolling or swiping */
+  scrollbar-width: none;
+}
+
+.floating-viewport::-webkit-scrollbar {
+  display: none;
 }
 
 .floating-viewport.is-zoomed-in {
