@@ -162,6 +162,15 @@
     </section>
   </main>
 
+  <!-- On phones, while the Mindscape is open: a zoom slider pinned to the
+       bottom of the screen. It sits outside the Mindscape section so the
+       section's fade-in doesn't carry it up the page. -->
+  <div class="zoom-slider-bar" id="zoom-slider-bar" hidden>
+    <label for="zoom-slider">Zoom</label>
+    <input type="range" id="zoom-slider" min="50" max="250" step="5" value="100">
+    <output id="zoom-slider-value" for="zoom-slider">100%</output>
+  </div>
+
   <script src="db.js"></script>
   <script src="people-field.js"></script>
   <script src="gallery.js"></script>

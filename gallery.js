@@ -267,6 +267,9 @@ function showView(view) {
     button.setAttribute('aria-pressed', String(button.dataset.view === view));
   });
 
+  // The phone zoom slider belongs to the Mindscape (and needs pieces to zoom).
+  document.getElementById('zoom-slider-bar').hidden = view !== 'floating' || allPieces.length === 0;
+
   // The catalogue orders books by name; the other views order pieces.
   document.getElementById('sort-order-control').hidden = view === 'catalogue';
   document.getElementById('catalogue-order-control').hidden = view !== 'catalogue';
@@ -288,6 +291,7 @@ function currentView() {
 function showMessage(html) {
   archiveMessage.innerHTML = html;
   archiveMessage.hidden = false;
+  document.getElementById('zoom-slider-bar').hidden = true;
   Object.values(VIEWS).forEach((section) => {
     section.hidden = true;
   });
@@ -1016,14 +1020,17 @@ function makeDraggable(tile, piece, look, open) {
 // Zooming the Mindscape: only the pieces and lines are scaled, so the page's
 // menus stay the same size. The buttons zoom around the middle of the view;
 // pinching a trackpad (or Ctrl/Cmd with the scroll wheel) zooms around the
-// pointer; + / - / 0 work too. Zoomed in, the area scrolls, and dragging its
-// empty background moves around. The zoom lasts for the visit.
+// pointer; + / - / 0 work too; on phones a slider pinned to the bottom of the
+// screen does the same. Zoomed in, the area scrolls, and dragging its empty
+// background moves around. The zoom lasts for the visit.
 
 const floatingViewport = document.getElementById('floating-viewport');
 const floatingStage = document.getElementById('floating-stage');
 const zoomOutButton = document.getElementById('zoom-out');
 const zoomInButton = document.getElementById('zoom-in');
 const zoomResetButton = document.getElementById('zoom-reset');
+const zoomSlider = document.getElementById('zoom-slider');
+const zoomSliderValue = document.getElementById('zoom-slider-value');
 const STAGE_PADDING = 16; // room for pieces drifting or growing past the edge
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.5;
@@ -1043,6 +1050,8 @@ function applyZoom() {
   floatingViewport.classList.toggle('is-zoomed-in', floatingZoom > 1);
 
   zoomResetButton.textContent = `${Math.round(floatingZoom * 100)}%`;
+  zoomSlider.value = Math.round(floatingZoom * 100);
+  zoomSliderValue.textContent = zoomResetButton.textContent;
   zoomOutButton.disabled = floatingZoom <= MIN_ZOOM;
   zoomInButton.disabled = floatingZoom >= MAX_ZOOM;
 }
@@ -1070,6 +1079,9 @@ function zoomTo(zoom, anchor) {
 zoomInButton.addEventListener('click', () => zoomTo(floatingZoom * ZOOM_STEP));
 zoomOutButton.addEventListener('click', () => zoomTo(floatingZoom / ZOOM_STEP));
 zoomResetButton.addEventListener('click', () => zoomTo(1));
+
+// The phone slider zooms around the middle of the view, like the buttons.
+zoomSlider.addEventListener('input', () => zoomTo(zoomSlider.value / 100));
 
 // A trackpad pinch arrives as a wheel event with ctrlKey set. Without this,
 // the browser would zoom the whole page, menus and all.
