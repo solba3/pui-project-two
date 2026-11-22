@@ -623,10 +623,19 @@ label {
   font-size: 50%;
 }
 
-/* Photo filter "Vintage": a warm, faded film look on every piece's photo in
-   the grid, carousel and Mindscape (set on the body by gallery.js) */
+/* Photo filter "Vintage": a disposable film camera look on every piece's
+   photo in the grid, carousel and Mindscape (set on the body by gallery.js;
+   the SVG filter itself is in index.html) */
 [data-photo-filter="vintage"] .piece-frame img {
-  filter: sepia(0.45) saturate(0.8) contrast(0.85) brightness(1.08);
+  filter: url(#disposable-film);
+}
+
+/* The SVG that holds the filter takes no space */
+.svg-filters {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
 /* Gift ideas: a white bookmark hanging from the picture's top edge near its
