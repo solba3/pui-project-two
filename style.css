@@ -1167,6 +1167,13 @@ label {
   margin-bottom: 1rem;
 }
 
+/* The "Title this piece." box is typed in Outfit, the page's font, on both
+   forms */
+#piece-title,
+#edit-title {
+  font-family: Outfit, sans-serif;
+}
+
 /* The description boxes are typed in JetBrains Mono, like the descriptions
    shown in Looking Back */
 .description-entry textarea {
