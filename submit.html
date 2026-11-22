@@ -37,6 +37,8 @@
           <img id="display-image" height="500" src=" " alt="user's submitted object" hidden>
           <span class="photo-caption" id="photo-caption">upload file here</span>
         </label>
+        <!-- Appears once a photo is chosen: crop it, or change its brightness and saturation -->
+        <button type="button" id="edit-photo" class="edit-photo-button" hidden>Edit photo</button>
         <input type="file" id="piece-image" onchange="handleImageUpload()" name="image" accept="image/*" required>
       </div>
     </div>
@@ -75,6 +77,7 @@
 
   <script src="db.js"></script>
   <script src="people-field.js"></script>
+  <script src="photo-editor.js"></script>
   <script src="submit.js"></script>
 </body>
 </html>

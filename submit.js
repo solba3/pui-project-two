@@ -106,10 +106,12 @@ photoDrop.addEventListener('drop', (event) => {
   imageInput.files = chosen.files;
   photoCaption.textContent = PHOTO_CAPTION;
   handleImageUpload();
+  resetPhotoEdits();
 });
 
 imageInput.addEventListener('change', () => {
   photoCaption.textContent = PHOTO_CAPTION;
+  resetPhotoEdits();
 });
 
 // A file dropped anywhere else on the page would make the browser open it,
@@ -137,7 +139,7 @@ submitForm.addEventListener('submit', async (event) => {
     title: document.getElementById('piece-title').value.trim(),
     people,
     descriptions: descriptionFields.getDescriptions(people),
-    image: document.getElementById('piece-image').files[0],
+    image: photoEdited || document.getElementById('piece-image').files[0],
     dateCollected: dateInput.value,
     dateAdded: new Date().toISOString(),
   };
@@ -155,6 +157,13 @@ submitForm.addEventListener('submit', async (event) => {
     return;
   }
 
+  // An edited photo is saved along with the original and its settings, so it
+  // can be edited again from the original later.
+  if (photoEdited) {
+    piece.originalImage = photoOriginal;
+    piece.photoEdits = photoEdits;
+  }
+
   const submitButton = submitForm.querySelector('button[type="submit"]');
   submitButton.disabled = true;
   submitStatus.textContent = 'Saving…';
@@ -167,4 +176,38 @@ submitForm.addEventListener('submit', async (event) => {
     submitStatus.textContent = 'Sorry, this piece could not be saved. Please try again.';
     submitButton.disabled = false;
   }
+});
+
+// ---------------------------------------------------------------------------
+// Editing the photo: once a photo is chosen, "Edit photo" (below the preview)
+// opens the photo editor to crop it or change its brightness and saturation.
+// The preview then shows the edited photo, which is what gets saved.
+
+const editPhotoButton = document.getElementById('edit-photo');
+const previewImage = document.getElementById('display-image');
+let photoOriginal = null; // the photo as chosen
+let photoEdits = null;    // the editor's settings, once applied
+let photoEdited = null;   // the edited photo, when the settings change anything
+let previewUrl = null;
+
+// A newly chosen photo starts with no edits.
+function resetPhotoEdits() {
+  photoOriginal = imageInput.files[0] || null;
+  photoEdits = null;
+  photoEdited = null;
+  editPhotoButton.hidden = !photoOriginal;
+}
+
+editPhotoButton.addEventListener('click', async () => {
+  if (!photoOriginal) return;
+  const result = await openPhotoEditor(photoOriginal, photoEdits || NO_PHOTO_EDITS);
+  editPhotoButton.focus();
+  if (!result) return; // cancelled
+
+  photoEdits = result.edits;
+  photoEdited = result.image;
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = URL.createObjectURL(photoEdited || photoOriginal);
+  previewImage.src = previewUrl;
+  previewImage.hidden = false;
 });
