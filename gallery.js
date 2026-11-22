@@ -826,8 +826,11 @@ function floatingConnections(centres) {
 function renderFloating() {
   if (floatingView.hidden) return;
 
-  const width = floatingField.clientWidth;
-  floatingWidth = width;
+  // The layout's width: the zoomable area's full width, less the stage's
+  // padding. The area's outer width is used, which scrollbars don't change.
+  floatingWidth = floatingViewport.getBoundingClientRect().width;
+  const width = floatingWidth - 2 * STAGE_PADDING;
+  floatingField.style.width = `${width}px`;
   const base = Math.min(150, width / 3.4); // a piece's size at 1x
   const cell = base * 1.55;                // distance between grid points
   const columns = Math.max(1, Math.floor(width / cell));
@@ -889,6 +892,7 @@ function renderFloating() {
   floatingLines.setAttribute('height', height);
 
   floatingLayout = { width, height, centres, sizes, tiles: new Map(), lineEnds: new Map() };
+  applyZoom();
 
   // Put each piece where it was dragged to this visit (if anywhere), kept inside the area.
   pieces.forEach((piece, index) => {
@@ -975,7 +979,8 @@ function makeDraggable(tile, piece, look, open) {
       tile.classList.add('is-dragging');
       bringToFront(tile, look);
     }
-    moveFloatingPiece(piece, look, start.centreX + dx, start.centreY + dy);
+    // The pointer moves in screen pixels; the layout is drawn at the zoom.
+    moveFloatingPiece(piece, look, start.centreX + dx / floatingZoom, start.centreY + dy / floatingZoom);
   });
 
   const finish = () => {
@@ -1007,10 +1012,105 @@ function makeDraggable(tile, piece, look, open) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Zooming the Mindscape: only the pieces and lines are scaled, so the page's
+// menus stay the same size. The buttons zoom around the middle of the view;
+// pinching a trackpad (or Ctrl/Cmd with the scroll wheel) zooms around the
+// pointer; + / - / 0 work too. Zoomed in, the area scrolls, and dragging its
+// empty background moves around. The zoom lasts for the visit.
+
+const floatingViewport = document.getElementById('floating-viewport');
+const floatingStage = document.getElementById('floating-stage');
+const zoomOutButton = document.getElementById('zoom-out');
+const zoomInButton = document.getElementById('zoom-in');
+const zoomResetButton = document.getElementById('zoom-reset');
+const STAGE_PADDING = 16; // room for pieces drifting or growing past the edge
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2.5;
+const ZOOM_STEP = 1.25;  // each button press or key
+let floatingZoom = 1;
+
+// Sizes the stage to the zoomed pieces and scales the field. At 100% or less
+// the area is just as tall as the pieces; zoomed in, it keeps its 100% height
+// and scrolls.
+function applyZoom() {
+  if (!floatingLayout) return;
+  const { width, height } = floatingLayout;
+  floatingField.style.transform = `scale(${floatingZoom})`;
+  floatingStage.style.width = `${width * floatingZoom + 2 * STAGE_PADDING}px`;
+  floatingStage.style.height = `${height * floatingZoom + 2 * STAGE_PADDING}px`;
+  floatingViewport.style.height = `${height * Math.min(floatingZoom, 1) + 2 * STAGE_PADDING}px`;
+  floatingViewport.classList.toggle('is-zoomed-in', floatingZoom > 1);
+
+  zoomResetButton.textContent = `${Math.round(floatingZoom * 100)}%`;
+  zoomOutButton.disabled = floatingZoom <= MIN_ZOOM;
+  zoomInButton.disabled = floatingZoom >= MAX_ZOOM;
+}
+
+// Zooms to `zoom`, keeping the point under `anchor` (a pointer position on
+// screen, or the middle of the view) in the same place.
+function zoomTo(zoom, anchor) {
+  const next = Math.min(Math.max(zoom, MIN_ZOOM), MAX_ZOOM);
+  if (next === floatingZoom || !floatingLayout) return;
+
+  const box = floatingViewport.getBoundingClientRect();
+  const ax = anchor ? anchor.x - box.left : floatingViewport.clientWidth / 2;
+  const ay = anchor ? anchor.y - box.top : floatingViewport.clientHeight / 2;
+  const fieldLeft = floatingStage.offsetLeft + STAGE_PADDING;
+  const fieldTop = floatingStage.offsetTop + STAGE_PADDING;
+  const x = (floatingViewport.scrollLeft + ax - fieldLeft) / floatingZoom;
+  const y = (floatingViewport.scrollTop + ay - fieldTop) / floatingZoom;
+
+  floatingZoom = next;
+  applyZoom();
+  floatingViewport.scrollLeft = x * floatingZoom + floatingStage.offsetLeft + STAGE_PADDING - ax;
+  floatingViewport.scrollTop = y * floatingZoom + floatingStage.offsetTop + STAGE_PADDING - ay;
+}
+
+zoomInButton.addEventListener('click', () => zoomTo(floatingZoom * ZOOM_STEP));
+zoomOutButton.addEventListener('click', () => zoomTo(floatingZoom / ZOOM_STEP));
+zoomResetButton.addEventListener('click', () => zoomTo(1));
+
+// A trackpad pinch arrives as a wheel event with ctrlKey set. Without this,
+// the browser would zoom the whole page, menus and all.
+floatingViewport.addEventListener('wheel', (event) => {
+  if (!event.ctrlKey && !event.metaKey) return;
+  event.preventDefault();
+  zoomTo(floatingZoom * Math.exp(-event.deltaY * 0.01), { x: event.clientX, y: event.clientY });
+}, { passive: false });
+
+document.addEventListener('keydown', (event) => {
+  if (floatingView.hidden || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.target.closest('input, select, textarea')) return;
+  if (event.key === '+' || event.key === '=') zoomTo(floatingZoom * ZOOM_STEP);
+  if (event.key === '-' || event.key === '_') zoomTo(floatingZoom / ZOOM_STEP);
+  if (event.key === '0') zoomTo(1);
+});
+
+// Dragging the empty background moves around a zoomed-in view.
+let panStart = null;
+floatingViewport.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || event.target.closest('.floating-piece')) return;
+  panStart = { x: event.clientX, y: event.clientY, left: floatingViewport.scrollLeft, top: floatingViewport.scrollTop };
+  floatingViewport.setPointerCapture(event.pointerId);
+  floatingViewport.classList.add('is-panning');
+});
+floatingViewport.addEventListener('pointermove', (event) => {
+  if (!panStart) return;
+  floatingViewport.scrollLeft = panStart.left - (event.clientX - panStart.x);
+  floatingViewport.scrollTop = panStart.top - (event.clientY - panStart.y);
+});
+['pointerup', 'pointercancel'].forEach((type) => {
+  floatingViewport.addEventListener(type, () => {
+    panStart = null;
+    floatingViewport.classList.remove('is-panning');
+  });
+});
+
 // Lay the pieces out again when the space changes width, such as when the
 // window is resized or the people sidebar opens.
 new ResizeObserver(() => {
-  if (floatingField.clientWidth !== floatingWidth) renderFloating();
-}).observe(floatingField);
+  if (floatingViewport.getBoundingClientRect().width !== floatingWidth) renderFloating();
+}).observe(floatingViewport);
 
 loadArchive();

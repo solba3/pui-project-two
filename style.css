@@ -701,10 +701,45 @@ label {
 }
 
 /* Floating view: pieces placed by gallery.js over lines drawn between them */
-.floating-field {
+/* Mindscape zoom: − / 100% / + above the area */
+.zoom-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.zoom-controls button {
+  min-width: 2rem;
+}
+
+/* The zoomable area. Zoomed in, it scrolls, and its empty background can be
+   dragged to move around. */
+.floating-viewport {
   position: relative;
   max-width: 70rem;
-  margin: 1.5rem auto 0;
+  margin: 1rem auto 0;
+  overflow: auto;
+}
+
+.floating-viewport.is-zoomed-in {
+  cursor: grab;
+}
+
+.floating-viewport.is-panning {
+  cursor: grabbing;
+}
+
+/* Sized by gallery.js to the zoomed pieces; centered when zoomed out */
+.floating-stage {
+  position: relative;
+  margin: 0 auto;
+  padding: 16px; /* STAGE_PADDING in gallery.js */
+}
+
+.floating-field {
+  position: relative;
+  transform-origin: 0 0;
 }
 
 .floating-lines {
