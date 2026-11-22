@@ -144,11 +144,32 @@
     <!-- Floating view: pieces scattered at random sizes, joined by lines where they share a person -->
     <section id="floating-view" class="float-in" hidden>
       <h1>Mindscape</h1>
-      <div id="floating-field" class="floating-field">
-        <svg id="floating-lines" class="floating-lines" aria-hidden="true"></svg>
+      <div class="zoom-controls" role="group" aria-label="Zoom">
+        <button type="button" id="zoom-out" aria-label="Zoom out">&minus;</button>
+        <button type="button" id="zoom-reset" aria-label="Reset zoom to 100%">100%</button>
+        <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+      </div>
+      <!-- The zoomable area: the stage is sized to the zoomed pieces, so the
+           area can scroll; the field holds the pieces and lines at full size
+           and is scaled by the zoom -->
+      <div id="floating-viewport" class="floating-viewport">
+        <div id="floating-stage" class="floating-stage">
+          <div id="floating-field" class="floating-field">
+            <svg id="floating-lines" class="floating-lines" aria-hidden="true"></svg>
+          </div>
+        </div>
       </div>
     </section>
   </main>
+
+  <!-- On phones, while the Mindscape is open: a zoom slider pinned to the
+       bottom of the screen. It sits outside the Mindscape section so the
+       section's fade-in doesn't carry it up the page. -->
+  <div class="zoom-slider-bar" id="zoom-slider-bar" hidden>
+    <label for="zoom-slider">Zoom</label>
+    <input type="range" id="zoom-slider" min="50" max="250" step="5" value="100">
+    <output id="zoom-slider-value" for="zoom-slider">100%</output>
+  </div>
 
   <script src="db.js"></script>
   <script src="people-field.js"></script>
