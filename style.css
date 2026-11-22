@@ -903,6 +903,152 @@ label {
   gap: 0.5rem;
 }
 
+/* The photo editor: a pop-up laid out like the submission card, the photo on
+   the left and its settings on the right */
+.photo-editor {
+  width: min(60rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  padding: 0;
+  border: 2px solid currentColor;
+  border-radius: 8px;
+  background: #ffffff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.photo-editor::backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.photo-editor-card {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  grid-template-areas:
+    "heading heading"
+    "picture settings";
+  padding: 2rem 2.5rem 2.5rem;
+}
+
+.photo-editor-card h2 {
+  grid-area: heading;
+  margin: 0 0 1.5rem;
+}
+
+.photo-editor-picture {
+  grid-area: picture;
+  padding-right: 2.5rem;
+}
+
+.photo-editor-settings {
+  grid-area: settings;
+  padding-left: 2.5rem;
+  border-left: 1px solid #d4d4d4;
+}
+
+.photo-editor .field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.photo-editor label,
+.photo-editor-label {
+  margin-bottom: 0.6rem;
+}
+
+.photo-editor .field-hint {
+  margin: -0.25rem 0 0.6rem;
+}
+
+.photo-editor input[type="range"] {
+  width: 100%;
+}
+
+.photo-editor-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.photo-editor-status {
+  margin: 0.75rem 0 0;
+}
+
+/* The photo, with the crop box over it; outside the crop is dimmed */
+.photo-editor-stage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  line-height: 0;
+  user-select: none;
+  touch-action: none;
+}
+
+.photo-editor-image {
+  display: block;
+  max-width: 100%;
+  max-height: min(60vh, 32rem);
+}
+
+.crop-box {
+  position: absolute;
+  border: 2px solid #ffffff;
+  outline: 1px solid rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  cursor: move;
+}
+
+.crop-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.7);
+}
+
+.crop-handle[data-corner="nw"] { top: -8px; left: -8px; cursor: nwse-resize; }
+.crop-handle[data-corner="ne"] { top: -8px; right: -8px; cursor: nesw-resize; }
+.crop-handle[data-corner="sw"] { bottom: -8px; left: -8px; cursor: nesw-resize; }
+.crop-handle[data-corner="se"] { bottom: -8px; right: -8px; cursor: nwse-resize; }
+
+.crop-box:focus-visible,
+.crop-handle:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+/* Narrow screens: the photo above its settings */
+@media (max-width: 760px) {
+  .photo-editor-card {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "heading"
+      "picture"
+      "settings";
+    padding: 1.5rem;
+  }
+
+  .photo-editor-picture {
+    padding-right: 0;
+  }
+
+  .photo-editor-settings {
+    margin-top: 1.5rem;
+    padding: 1.5rem 0 0;
+    border-left: none;
+    border-top: 1px solid #d4d4d4;
+  }
+}
+
+/* "Edit photo" on the submission card sits between the preview and the
+   "Choose File" button */
+.postcard .edit-photo-button {
+  align-self: flex-start;
+  margin-bottom: 0.75rem;
+}
+
 /* Editing a piece in the carousel */
 .edit-form {
   margin-top: 1.5rem;
@@ -913,6 +1059,14 @@ label {
   flex-direction: column;
   align-items: center;
   margin-bottom: 1rem;
+}
+
+/* "Gift Idea?" on the same line as Save, Cancel and Delete */
+.edit-actions .gift-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: 0.5rem;
 }
 
 .edit-form > .edit-actions {

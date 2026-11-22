@@ -128,11 +128,9 @@
 
       <!-- Shown in place of the title, people and description while editing -->
       <form id="edit-form" class="edit-form" hidden>
+        <!-- Below the photo: crop it, or change its brightness and saturation -->
         <div>
-          <label class="gift-toggle">
-            <input type="checkbox" id="edit-gift-idea">
-            Gift Idea?
-          </label>
+          <button type="button" id="edit-photo" class="edit-photo-button">Edit photo</button>
         </div>
         <div>
           <label for="edit-title">Title this piece.</label>
@@ -146,6 +144,10 @@
         <!-- One "Why does this remind you of …?" box for each person tagged -->
         <div id="edit-descriptions" class="description-fields"></div>
         <div class="edit-actions">
+          <label class="gift-toggle">
+            <input type="checkbox" id="edit-gift-idea">
+            Gift Idea?
+          </label>
           <button type="submit">Save</button>
           <button type="button" id="edit-cancel">Cancel</button>
           <button type="button" id="edit-delete">Delete</button>
@@ -201,6 +203,7 @@
 
   <script src="db.js"></script>
   <script src="people-field.js"></script>
+  <script src="photo-editor.js"></script>
   <script src="gallery.js"></script>
 </body>
 </html>
