@@ -623,6 +623,12 @@ label {
   font-size: 50%;
 }
 
+/* Photo filter "Vintage": a warm, faded film look on every piece's photo in
+   the grid, carousel and Mindscape (set on the body by gallery.js) */
+[data-photo-filter="vintage"] .piece-frame img {
+  filter: sepia(0.45) saturate(0.8) contrast(0.85) brightness(1.08);
+}
+
 /* Gift ideas: a white bookmark hanging from the picture's top edge near its
    left corner (placed and sized by gallery.js, as a share of the picture). */
 .piece-frame .bookmark {
