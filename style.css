@@ -756,8 +756,8 @@ label {
   }
 }
 
-/* The zoomable area. Zoomed in, it scrolls, and its empty background can be
-   dragged to move around. */
+/* The zoomable area. Except at the most zoomed-out view, it scrolls, and its
+   empty background can be dragged to move around. */
 .floating-viewport {
   position: relative;
   max-width: 70rem;
@@ -772,7 +772,7 @@ label {
   display: none;
 }
 
-.floating-viewport.is-zoomed-in {
+.floating-viewport.can-pan {
   cursor: grab;
 }
 
