@@ -834,7 +834,6 @@ function renderFloating() {
   // padding. The area's outer width is used, which scrollbars don't change.
   floatingWidth = floatingViewport.getBoundingClientRect().width;
   const width = floatingWidth - 2 * STAGE_PADDING;
-  floatingField.style.width = `${width}px`;
   const base = Math.min(150, width / 3.4); // a piece's size at 1x
   const cell = base * 1.55;                // distance between grid points
   const columns = Math.max(1, Math.floor(width / cell));
@@ -891,12 +890,31 @@ function renderFloating() {
   });
 
   const height = Math.max(...bottoms) - shift;
-  floatingField.style.height = `${height}px`;
-  floatingLines.setAttribute('width', width);
-  floatingLines.setAttribute('height', height);
 
-  floatingLayout = { width, height, centres, sizes, tiles: new Map(), lineEnds: new Map() };
+  // The area pieces can be moved around in is everything seen at the most
+  // zoomed-out view: 1 / MIN_ZOOM times the layout each way, with the layout
+  // in the middle. Its top edge is just below the header.
+  const worldWidth = width / MIN_ZOOM;
+  const worldHeight = height / MIN_ZOOM;
+  const offsetX = (worldWidth - width) / 2;
+  const offsetY = (worldHeight - height) / 2;
+  centres.forEach((centre) => {
+    centre.x += offsetX;
+    centre.y += offsetY;
+  });
+
+  floatingField.style.width = `${worldWidth}px`;
+  floatingField.style.height = `${worldHeight}px`;
+  floatingLines.setAttribute('width', worldWidth);
+  floatingLines.setAttribute('height', worldHeight);
+
+  floatingLayout = {
+    width: worldWidth, height: worldHeight, // the area pieces can be moved in
+    viewWidth: width, viewHeight: height,   // what's shown at 100%
+    centres, sizes, tiles: new Map(), lineEnds: new Map(),
+  };
   applyZoom();
+  centreFloatingView();
 
   // Put each piece where it was dragged to this visit (if anywhere), kept inside the area.
   pieces.forEach((piece, index) => {
@@ -923,8 +941,8 @@ function renderFloating() {
   floatingField.replaceChildren(floatingLines, ...tiles);
 }
 
-// Moves a piece's centre to (x, y), kept inside the area, along with the ends
-// of its lines.
+// Moves a piece's centre to (x, y), kept inside the area that the most
+// zoomed-out view shows, along with the ends of its lines.
 function placeFloatingPiece(id, x, y) {
   const { width, height, centres, sizes, tiles, lineEnds } = floatingLayout;
   const half = sizes.get(id) / 2;
@@ -1021,8 +1039,8 @@ function makeDraggable(tile, piece, look, open) {
 // menus stay the same size. The buttons zoom around the middle of the view;
 // pinching a trackpad (or Ctrl/Cmd with the scroll wheel) zooms around the
 // pointer; + / - / 0 work too; on phones a slider pinned to the bottom of the
-// screen does the same. Zoomed in, the area scrolls, and dragging its empty
-// background moves around. The zoom lasts for the visit.
+// screen does the same. Except at the most zoomed-out view, the area scrolls,
+// and dragging its empty background moves around. The zoom lasts for the visit.
 
 const floatingViewport = document.getElementById('floating-viewport');
 const floatingStage = document.getElementById('floating-stage');
@@ -1037,23 +1055,31 @@ const MAX_ZOOM = 2.5;
 const ZOOM_STEP = 1.25;  // each button press or key
 let floatingZoom = 1;
 
-// Sizes the stage to the zoomed pieces and scales the field. At 100% or less
-// the area is just as tall as the pieces; zoomed in, it keeps its 100% height
-// and scrolls.
+// Sizes the stage to the zoomed area and scales the field. The view keeps the
+// 100% layout's size: at the most zoomed-out view the whole area fits in it,
+// and closer in it scrolls.
 function applyZoom() {
   if (!floatingLayout) return;
-  const { width, height } = floatingLayout;
+  const { width, height, viewHeight } = floatingLayout;
   floatingField.style.transform = `scale(${floatingZoom})`;
   floatingStage.style.width = `${width * floatingZoom + 2 * STAGE_PADDING}px`;
   floatingStage.style.height = `${height * floatingZoom + 2 * STAGE_PADDING}px`;
-  floatingViewport.style.height = `${height * Math.min(floatingZoom, 1) + 2 * STAGE_PADDING}px`;
-  floatingViewport.classList.toggle('is-zoomed-in', floatingZoom > 1);
+  floatingViewport.style.height = `${viewHeight + 2 * STAGE_PADDING}px`;
+  floatingViewport.classList.toggle('can-pan', floatingZoom > MIN_ZOOM);
 
   zoomResetButton.textContent = `${Math.round(floatingZoom * 100)}%`;
   zoomSlider.value = Math.round(floatingZoom * 100);
   zoomSliderValue.textContent = zoomResetButton.textContent;
   zoomOutButton.disabled = floatingZoom <= MIN_ZOOM;
   zoomInButton.disabled = floatingZoom >= MAX_ZOOM;
+}
+
+// Scrolls so the middle of the area (where the layout starts) is in the
+// middle of the view.
+function centreFloatingView() {
+  const { width, height } = floatingLayout;
+  floatingViewport.scrollLeft = (width / 2) * floatingZoom + STAGE_PADDING - floatingViewport.clientWidth / 2;
+  floatingViewport.scrollTop = (height / 2) * floatingZoom + STAGE_PADDING - floatingViewport.clientHeight / 2;
 }
 
 // Zooms to `zoom`, keeping the point under `anchor` (a pointer position on
