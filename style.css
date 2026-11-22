@@ -15,6 +15,11 @@ body {
   font-style: normal;
 }
 
+/* Headings in Outfit ExtraLight */
+h1 {
+  font-weight: 200;
+}
+
 button {
   font-family: Outfit, sans-serif;
 }
@@ -1162,7 +1167,14 @@ label {
   margin-bottom: 1rem;
 }
 
+/* The description boxes are typed in JetBrains Mono, like the descriptions
+   shown in Looking Back */
+.description-entry textarea {
+  font-family: "Jetbrains Mono", Courier, monospace;
+}
+
 .carousel-description {
   max-width: 40em;
   margin: 1.5rem auto 0;
+  font-family: "Jetbrains Mono", Courier, monospace;
 }
