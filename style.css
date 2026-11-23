@@ -671,6 +671,36 @@ label {
   cursor: pointer;
 }
 
+/* Grid: a piece's picture grows and tilts a little when pointed at (or
+   focused with the keyboard), every other piece tilting the other way. The
+   dots and date below stay put. */
+.piece-tile .piece-frame {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.piece-tile:hover .piece-frame,
+.piece-tile:focus-visible .piece-frame {
+  transform: scale(1.06) rotate(-2deg);
+}
+
+.piece-grid li:nth-child(even) .piece-tile:hover .piece-frame,
+.piece-grid li:nth-child(even) .piece-tile:focus-visible .piece-frame {
+  transform: scale(1.06) rotate(2deg);
+}
+
+/* The piece being pointed at sits above its neighbours */
+.piece-tile:hover,
+.piece-tile:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piece-tile .piece-frame {
+    transition: none;
+  }
+}
+
 /* Grid: the row of dots, centered below the picture, then the date */
 .piece-tile .piece-dots {
   justify-content: center;
