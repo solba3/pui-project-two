@@ -133,26 +133,141 @@ function renderGrid() {
   });
 }
 
+// Looking Back: the pieces sit in a row that moves with the scrolling as it
+// happens. carouselPosition is where the row is, counted in pieces (a
+// fraction while it moves). The piece nearest the middle is the main one, at
+// full size; the others shrink and fade the farther they are from it. When the
+// scrolling stops, the row glides onto the nearest piece. The row wraps
+// around, so every whole number is a place in it, showing piece (place mod
+// the number of pieces).
+const carouselStage = document.querySelector('.carousel');
+const carouselTrack = document.querySelector('.carousel-track');
+let carouselPosition = 0;         // where the row is shown now
+let carouselTarget = 0;           // where it is heading
+const carouselSlides = new Map(); // place in the row -> the box showing it
+
+// Starts the row afresh on carouselIndex (opening the view, or after the
+// pieces change).
 function renderCarousel() {
+  stopCarouselGlide();
+  carouselSlides.forEach((slide) => slide.remove());
+  carouselSlides.clear();
+  if (!pieces[carouselIndex]) return;
+  carouselPosition = carouselTarget = carouselIndex;
+  renderCarouselText();
+  layoutCarousel();
+}
+
+// The title, people, description and date of the piece in the middle.
+function renderCarouselText() {
   const piece = pieces[carouselIndex];
-  if (!piece) return;
-
   document.getElementById('carousel-title').replaceChildren(piece.title, peopleDots(getPiecePeople(piece), personColors));
-  carouselFrame.classList.toggle('is-gift', giftIdeaIds.has(piece.id));
   document.getElementById('carousel-person').replaceChildren(namesWithColors(getPiecePeople(piece), personColors));
-
-  const image = document.getElementById('carousel-image');
-  showPhoto(image, piece.id);
-  image.alt = piece.title;
-
-  // Peek at the neighbouring pieces, unless this is the only one.
-  const hasNeighbours = pieces.length > 1;
-  setPeek(peekPrev, hasNeighbours ? pieces[wrapIndex(carouselIndex - 1)] : null);
-  setPeek(peekNext, hasNeighbours ? pieces[wrapIndex(carouselIndex + 1)] : null);
-
   renderDescriptions(piece);
   document.getElementById('carousel-details').textContent =
     `Collected ${formatDate(collectedDate(piece))} · ${carouselIndex + 1} of ${pieces.length}`;
+}
+
+// The sizes the row is drawn at: the main piece's longer side, a sneak peek's,
+// and how far each peek tucks behind the main piece (as in style.css).
+function carouselSizes() {
+  const main = carouselStage.getBoundingClientRect().height;
+  const vw = window.innerWidth / 100;
+  return window.innerWidth <= 600
+    ? { main, peek: 22 * vw, overlap: 16 }
+    : { main, peek: Math.min(220, 22 * vw), overlap: 32 };
+}
+
+// Draws the row at carouselPosition: adds the boxes coming into view, removes
+// the ones gone past, and sizes, places and fades each by its distance from
+// the middle.
+function layoutCarousel() {
+  const nearest = Math.round(carouselPosition);
+  if (wrapIndex(nearest) !== carouselIndex) {
+    carouselIndex = wrapIndex(nearest);
+    renderCarouselText();
+  }
+
+  // Within two places of the middle (only the one piece, if there is just one).
+  const reach = pieces.length > 1 ? 2 : 0.5;
+  const places = [];
+  for (let place = Math.ceil(carouselPosition - reach); place < carouselPosition + reach; place += 1) {
+    places.push(place);
+  }
+  carouselSlides.forEach((slide, place) => {
+    if (!places.includes(place)) {
+      slide.remove();
+      carouselSlides.delete(place);
+    }
+  });
+
+  const { main, peek, overlap } = carouselSizes();
+  const peekScale = peek / main;
+
+  // Each piece's size and fade by its distance from the middle.
+  const looks = new Map(places.map((place) => {
+    const slide = carouselSlides.get(place) || addCarouselSlide(place);
+    const distance = Math.abs(place - carouselPosition);
+    const past = Math.max(0, distance - 1);
+    const scale = distance <= 1
+      ? 1 + (peekScale - 1) * distance  // from the middle out to a sneak peek
+      : peekScale * (1 - 0.3 * past);   // from a sneak peek to gone
+    const opacity = distance <= 1 ? 1 - 0.5 * distance : 0.5 * (1 - past);
+    const ratio = parseFloat(slide.style.getPropertyValue('--ratio')) || 1;
+    const halfWidth = (main * Math.min(1, ratio) * scale) / 2; // as drawn, in the photo's shape
+    return [place, { slide, scale, opacity, halfWidth }];
+  }));
+
+  // Side by side, each piece tucked a little behind its neighbour, whatever
+  // the photos' shapes. The two pieces either side of the position are placed
+  // first, the middle point falling between them by how far the row has
+  // moved; the rest follow outwards from them.
+  const gap = (left, right) => looks.get(left).halfWidth + looks.get(right).halfWidth - overlap;
+  const before = Math.floor(carouselPosition);
+  const x = new Map();
+  if (looks.has(before + 1)) {
+    const moved = carouselPosition - before;
+    x.set(before, -moved * gap(before, before + 1));
+    x.set(before + 1, (1 - moved) * gap(before, before + 1));
+  } else {
+    x.set(before, 0); // only one piece
+  }
+  places.filter((place) => place > before + 1).forEach((place) => x.set(place, x.get(place - 1) + gap(place - 1, place)));
+  places.filter((place) => place < before).reverse().forEach((place) => x.set(place, x.get(place + 1) - gap(place, place + 1)));
+
+  looks.forEach(({ slide, scale, opacity }, place) => {
+    const distance = Math.abs(place - carouselPosition);
+    slide.style.transform = `translate(-50%, -50%) translateX(${x.get(place)}px) scale(${scale})`;
+    slide.style.opacity = opacity;
+    slide.style.zIndex = Math.round(100 - distance * 10);
+
+    // Only the main piece is described to screen readers.
+    const isMain = place === nearest;
+    slide.classList.toggle('is-main', isMain);
+    slide.setAttribute('aria-hidden', String(!isMain));
+    slide.querySelector('img').alt = isMain ? pieces[wrapIndex(place)].title : '';
+  });
+}
+
+function addCarouselSlide(place) {
+  const piece = pieces[wrapIndex(place)];
+  const slide = document.createElement('div');
+  slide.className = 'piece-frame carousel-slide';
+  slide.classList.toggle('is-gift', giftIdeaIds.has(piece.id));
+  slide.dataset.place = place;
+  const image = document.createElement('img');
+  image.alt = '';
+  image.draggable = false;
+  fitToPhoto(image);
+  // Once the photo's shape is known, the pieces beside it are spaced to it.
+  image.addEventListener('load', () => {
+    if (slide.isConnected) layoutCarousel();
+  });
+  slide.append(image, createBookmark());
+  carouselTrack.append(slide);
+  showPhoto(image, piece.id); // once in its box, which takes the photo's shape
+  carouselSlides.set(place, slide);
+  return slide;
 }
 
 // One description is shown as it is; with several people, each person's name
@@ -182,44 +297,44 @@ function wrapIndex(index) {
   return (index + pieces.length) % pieces.length;
 }
 
-// Shows a neighbouring piece in a sneak-peek square, or hides the square
-// (keeping its space, so the main image stays centered) when there is none.
-function setPeek(peek, piece) {
-  peek.classList.toggle('is-gift', Boolean(piece) && giftIdeaIds.has(piece.id));
-  peek.style.visibility = piece ? 'visible' : 'hidden';
-  if (piece) {
-    showPhoto(peek.querySelector('img'), piece.id);
-  }
-}
-
-// Move through the carousel, wrapping around at either end.
+// Move one piece (or more) along, wrapping around at either end.
 function moveCarousel(step) {
-  if (pieces.length === 0 || editing) return;
-  carouselIndex = wrapIndex(carouselIndex + step);
-  renderCarousel();
-  swingInMainImage(Math.sign(step));
+  if (pieces.length < 2 || editing) return;
+  carouselTarget = Math.round(carouselTarget) + step;
+  glideCarousel();
 }
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-// The new main image slides in from the side its sneak peek was on (1 for
-// next, -1 for previous), growing from the peek's smaller, fainter size into
-// the centre. Nothing else in the carousel animates when switching pieces.
-function swingInMainImage(direction) {
-  if (reduceMotion.matches) return;
+// The row follows carouselTarget closely, easing the last bit of the way so
+// scrolling (and the glide onto a piece afterwards) looks smooth. With reduced
+// motion it jumps straight there.
+const GLIDE_TIME = 90; // ms; smaller follows more tightly
+let glideFrame = null;
+let glideTime = 0;
 
-  // Stop any swing still playing, so clicking quickly never leaves one half-finished.
-  carouselFrame.getAnimations().forEach((animation) => animation.cancel());
-  carouselFrame.animate(
-    [
-      {
-        opacity: 0.5,
-        transform: `translateX(${direction * 60}%) scale(0.55)`,
-      },
-      { opacity: 1, transform: 'none' },
-    ],
-    { duration: 600, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' } // same easing as the float-in
-  );
+function glideCarousel() {
+  if (glideFrame !== null) return;
+  glideTime = performance.now();
+  glideFrame = requestAnimationFrame(glideStep);
+}
+
+function glideStep(now) {
+  const elapsed = Math.min(64, now - glideTime);
+  glideTime = now;
+  const gap = carouselTarget - carouselPosition;
+  if (reduceMotion.matches || Math.abs(gap) < 0.002) {
+    carouselPosition = carouselTarget;
+  } else {
+    carouselPosition += gap * (1 - Math.exp(-elapsed / GLIDE_TIME));
+  }
+  layoutCarousel();
+  glideFrame = carouselPosition === carouselTarget ? null : requestAnimationFrame(glideStep);
+}
+
+function stopCarouselGlide() {
+  cancelAnimationFrame(glideFrame);
+  glideFrame = null;
 }
 
 // Each piece's box takes the shape of its photo (wide, tall or square), so its
@@ -320,24 +435,21 @@ sortSelect.addEventListener('change', () => {
   renderFloating();
 });
 
-// Clicking a sneak peek moves to that piece.
-const peekPrev = document.getElementById('carousel-peek-prev');
-const peekNext = document.getElementById('carousel-peek-next');
-const carouselFrame = document.querySelector('.carousel-frame');
+// Clicking a piece beside the main one moves to it.
+carouselTrack.addEventListener('click', (event) => {
+  const slide = event.target.closest('.carousel-slide');
+  if (!slide || editing || slide.classList.contains('is-main')) return;
+  carouselTarget = Number(slide.dataset.place);
+  glideCarousel();
+});
 
-// The carousel's images change source as it moves; each new picture is fitted.
-[
-  document.getElementById('carousel-image'),
-  peekPrev.querySelector('img'),
-  peekNext.querySelector('img'),
-].forEach(fitToPhoto);
-[carouselFrame, peekPrev, peekNext].forEach((frame) => frame.append(createBookmark()));
-peekPrev.addEventListener('click', () => moveCarousel(-1));
-peekNext.addEventListener('click', () => moveCarousel(1));
+// The row is drawn in pixels, so it's drawn again when the window changes size.
+window.addEventListener('resize', () => {
+  if (!carouselView.hidden && pieces.length) layoutCarousel();
+});
 
 // Left and right arrow keys move the carousel; so do up and down while the
 // pieces themselves are focused.
-const carouselStage = document.querySelector('.carousel');
 document.addEventListener('keydown', (event) => {
   if (carouselView.hidden || editing || event.target.closest('select, input, textarea')) return;
   if (event.key === 'ArrowLeft') moveCarousel(-1);
@@ -348,59 +460,72 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-// Scrolling through Looking Back: over the pieces, scrolling down (mouse
-// wheel or trackpad) moves to the next piece and scrolling up to the one
-// before; on a touch screen, swiping up or down does the same. One gesture
-// moves one piece, however fast or long it is. Elsewhere the page scrolls as
-// usual.
-const SCROLL_DISTANCE = 50;  // how far a scroll must go to move a piece
-const SWIPE_DISTANCE = 40;   // how far a swipe must go, in pixels
-const SCROLL_QUIET = 180;    // a pause this long (ms) ends a scroll gesture
-const SCROLL_REPEAT = 450;   // a scroll that keeps going moves on again after this long (ms)
-let scrolled = 0;
-let scrollLockedUntil = 0;
-let scrollQuietTimer = null;
+// Scrolling through Looking Back: over the pieces, the row moves with the
+// scrolling as it happens (mouse wheel or trackpad; on a touch screen, the
+// finger sliding up or down). Scrolling down, or sliding up, brings the next
+// pieces. When it stops, the row settles on the nearest piece, leaning the way
+// it was going, so even one notch of a mouse wheel moves on one piece.
+// Elsewhere the page scrolls as usual.
+const SCROLL_PER_PIECE = 200; // pixels of scrolling that move one piece
+const SWIPE_PER_PIECE = 160;  // pixels a finger slides to move one piece
+const SETTLE_AFTER = 160;     // ms of no scrolling before settling on a piece
+const SETTLE_LEAN = 0.3;      // how far (in pieces) settling leans the way it was going
+let scrollDirection = 0;      // 1 toward the next pieces, -1 back
+let settleTimer = null;
+
+function settleCarousel() {
+  carouselTarget = Math.round(carouselTarget + SETTLE_LEAN * scrollDirection);
+  glideCarousel();
+}
 
 carouselStage.addEventListener('wheel', (event) => {
-  if (carouselView.hidden || editing || event.ctrlKey) return;
+  if (carouselView.hidden || editing || event.ctrlKey || pieces.length < 2) return;
   if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return; // sideways scrolling isn't ours
   event.preventDefault(); // the page stays put while scrolling over the pieces
 
-  // A gesture ends when the scrolling pauses.
-  clearTimeout(scrollQuietTimer);
-  scrollQuietTimer = setTimeout(() => {
-    scrolled = 0;
-    scrollLockedUntil = 0;
-  }, SCROLL_QUIET);
-  if (performance.now() < scrollLockedUntil) return;
-
-  scrolled += event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY; // lines to pixels
-  if (Math.abs(scrolled) >= SCROLL_DISTANCE) {
-    moveCarousel(Math.sign(scrolled));
-    scrolled = 0;
-    scrollLockedUntil = performance.now() + SCROLL_REPEAT;
-  }
+  const scrolled = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY; // lines to pixels
+  carouselTarget += scrolled / SCROLL_PER_PIECE;
+  scrollDirection = Math.sign(scrolled);
+  glideCarousel();
+  clearTimeout(settleTimer);
+  settleTimer = setTimeout(settleCarousel, SETTLE_AFTER);
 }, { passive: false });
 
-let swipe = null; // where a touch began
-let swiped = false;
+let swipe = null;    // a finger on the pieces: where it began, and the row then
+let swiped = false;  // the last touch slid the row (so it isn't also a click)
 carouselStage.addEventListener('pointerdown', (event) => {
-  if (event.pointerType === 'mouse') return;
-  swipe = { x: event.clientX, y: event.clientY };
-  swiped = false;
+  swiped = false; // every press starts afresh, a mouse's included
+  if (event.pointerType === 'mouse' || editing || pieces.length < 2) return;
+  clearTimeout(settleTimer);
+  swipe = { x: event.clientX, y: event.clientY, lastY: event.clientY, from: carouselTarget, sliding: false };
 });
-carouselStage.addEventListener('pointerup', (event) => {
-  if (!swipe || event.pointerType === 'mouse') return;
+carouselStage.addEventListener('pointermove', (event) => {
+  if (!swipe) return;
   const dx = event.clientX - swipe.x;
   const dy = event.clientY - swipe.y;
-  swipe = null;
-  if (editing || Math.abs(dy) < SWIPE_DISTANCE || Math.abs(dy) < Math.abs(dx)) return;
-  swiped = true;
-  moveCarousel(dy < 0 ? 1 : -1); // swiping up brings the next piece
+  if (!swipe.sliding) {
+    if (Math.hypot(dx, dy) < 8) return;            // still a tap
+    if (Math.abs(dx) > Math.abs(dy)) {              // sideways: not ours
+      swipe = null;
+      return;
+    }
+    swipe.sliding = true;
+    carouselStage.setPointerCapture(event.pointerId);
+  }
+  if (event.clientY !== swipe.lastY) scrollDirection = event.clientY < swipe.lastY ? 1 : -1;
+  swipe.lastY = event.clientY;
+  carouselTarget = swipe.from - dy / SWIPE_PER_PIECE; // sliding up brings the next piece
+  glideCarousel();
 });
-carouselStage.addEventListener('pointercancel', () => {
+const endSwipe = () => {
+  if (swipe && swipe.sliding) {
+    swiped = true;
+    settleCarousel();
+  }
   swipe = null;
-});
+};
+carouselStage.addEventListener('pointerup', endSwipe);
+carouselStage.addEventListener('pointercancel', endSwipe);
 // A swipe that ends on a sneak peek doesn't also count as clicking it.
 carouselStage.addEventListener('click', (event) => {
   if (!swiped) return;

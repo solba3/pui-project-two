@@ -1126,68 +1126,44 @@ label {
 }
 
 /* Carousel view */
-/* Scrolling or swiping up and down over the pieces moves through them, so
-   the browser leaves vertical touch gestures here to the page's code */
+/* The pieces in a row, moved, sized and faded by gallery.js as the row
+   scrolls. Scrolling or swiping up and down here moves through them, so the
+   browser leaves vertical touch gestures to the page's code. --main is the
+   main piece's longer side; the row is that tall, so the text below stays
+   put whatever the photo's shape. */
 .carousel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  --main: min(420px, 50vw);
+  position: relative;
+  height: var(--main);
   touch-action: pan-x;
 }
 
 .carousel-track {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  inset: 0;
 }
 
-.carousel-frame {
-  flex: none;
-  position: relative;
-  z-index: 1; /* sits in front of the sneak peeks it overlaps */
-  /* a square's width for a wide photo; narrower for a tall one, so it is as
-     tall as the square would be */
-  width: calc(min(420px, 50vw) * min(1, var(--ratio, 1)));
-}
-
-/* Sneak peeks: smaller, half-transparent squares either side, turned in 3D
-   so they face the main image (their inner edges sit farther back) */
-.carousel-peek {
-  flex: none;
-  width: calc(min(220px, 22vw) * min(1, var(--ratio, 1)));
-  opacity: 0.5;
+/* Each piece is centred in the row, at the main size in its photo's shape
+   (gallery.js shrinks and moves it from there) */
+.carousel-slide {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--main) * min(1, var(--ratio, 1)));
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
   cursor: pointer;
+  user-select: none;
 }
 
-/* The sneak peeks lie flat, tucked slightly behind the main picture */
-.carousel-peek-prev {
-  margin-right: -2rem;
+.carousel-slide.is-main {
+  cursor: default;
 }
 
-.carousel-peek-next {
-  margin-left: -2rem;
-}
-
-/* Narrow screens: a bigger main picture and smaller peeks */
+/* Narrow screens: a bigger main picture (smaller peeks are set in gallery.js) */
 @media (max-width: 600px) {
-  .carousel-track {
-    width: 100%;
-  }
-
-  .carousel-frame {
-    width: calc(56vw * min(1, var(--ratio, 1)));
-  }
-
-  .carousel-peek {
-    width: calc(22vw * min(1, var(--ratio, 1)));
-  }
-
-  .carousel-peek-prev {
-    margin-right: -1rem;
-  }
-
-  .carousel-peek-next {
-    margin-left: -1rem;
+  .carousel {
+    --main: 56vw;
   }
 }
 

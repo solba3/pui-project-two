@@ -105,21 +105,11 @@
       <h2 id="carousel-person"></h2>
 
       <!-- Scroll or swipe up and down over the pieces (or use the arrow keys)
-           to move through them -->
+           to move through them. The row of pieces moves with the scrolling;
+           gallery.js fills it with the main piece and those either side. -->
       <div class="carousel" tabindex="0"
         aria-label="Pieces: scroll or swipe up and down, or use the arrow keys, to move between them">
-        <div class="carousel-track">
-          <!-- Sneak peeks of the pieces before and after; clicking one moves to it -->
-          <div class="piece-frame carousel-peek carousel-peek-prev" id="carousel-peek-prev" aria-hidden="true">
-            <img alt="">
-          </div>
-          <div class="piece-frame carousel-frame">
-            <img id="carousel-image" alt="">
-          </div>
-          <div class="piece-frame carousel-peek carousel-peek-next" id="carousel-peek-next" aria-hidden="true">
-            <img alt="">
-          </div>
-        </div>
+        <div class="carousel-track"></div>
       </div>
 
       <!-- One description, or one per person when several are tagged -->
