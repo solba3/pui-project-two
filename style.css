@@ -595,31 +595,26 @@ label {
   }
 }
 
-/* A square box that fits its image inside without cropping or stretching */
+/* A box in the shape of its photo, so its edges hug the picture: --ratio is
+   the photo's width / height, set by gallery.js once the photo loads (until
+   then the box is square). Each view sets the box's width; the height follows. */
 .piece-frame {
   position: relative; /* for the gift idea bookmark */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 1 / 1;
-  min-height: 0; /* stops a tall image from stretching the square */
+  display: block;
+  aspect-ratio: var(--ratio, 1);
   overflow: hidden;
 }
 
-/* The image is sized to the picture itself (full width, or full height for
-   a tall picture) so its rounded corners land on the picture */
+/* The photo fills its box exactly */
 .piece-frame img {
   display: block;
   width: 100%;
-  height: auto;
-}
-
-.piece-frame img.is-tall {
-  width: auto;
   height: 100%;
+  object-fit: cover; /* only matters for a moment, while a new photo's shape loads */
 }
 
-/* Grid view: equal squares, centered on the page */
+/* Grid view: equal columns, centered on the page. The pieces in a row line up
+   along the bottoms of their photos, so the dots and dates below stay in line. */
 .piece-grid {
   list-style: none;
   margin: 0;
@@ -628,6 +623,7 @@ label {
   grid-template-columns: repeat(auto-fit, clamp(140px, 40vw, 220px));
   justify-content: center;
   gap: 2rem 1.5rem;
+  align-items: end;
 }
 
 /* The date under a grid piece, at half the size of the names beside it */
@@ -652,9 +648,12 @@ label {
 }
 
 /* Gift ideas: a white bookmark hanging from the picture's top edge near its
-   left corner (placed and sized by gallery.js, as a share of the picture). */
+   left corner, sized as a share of the picture so it scales with it. */
 .piece-frame .bookmark {
   position: absolute;
+  top: 0;
+  left: 6%;
+  width: 9%;
   display: none;
   height: auto;
   aspect-ratio: 10 / 14;
@@ -683,6 +682,10 @@ label {
    focused with the keyboard), every other piece tilting the other way. The
    dots and date below stay put. */
 .piece-tile .piece-frame {
+  /* the column's width for a wide or square photo; narrower for a tall one,
+     so it is as tall as a square would be */
+  width: calc(100% * min(1, var(--ratio, 1)));
+  align-self: center;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -866,6 +869,10 @@ label {
 
 .floating-piece {
   position: absolute;
+  /* centred on its spot (left and top, set by gallery.js); --size is the
+     longer side, so a tall photo is narrower than a wide one */
+  width: calc(var(--size) * min(1, var(--ratio, 1)));
+  transform: translate(-50%, -50%);
   z-index: var(--layer); /* set at random, so overlaps stack differently */
   padding: 0;
   border: none;
@@ -889,7 +896,7 @@ label {
 .floating-piece:hover,
 .floating-piece:focus-visible {
   z-index: 1000;
-  transform: scale(1.05);
+  transform: translate(-50%, -50%) scale(1.05);
 }
 
 /* Each piece drifts gently around its spot, on a loop of its own (the values
@@ -1138,15 +1145,16 @@ label {
   flex: none;
   position: relative;
   z-index: 1; /* sits in front of the sneak peeks it overlaps */
-  width: min(420px, 50vw);
-  background: var(--paper); /* hides the peeks behind any empty space in the square */
+  /* a square's width for a wide photo; narrower for a tall one, so it is as
+     tall as the square would be */
+  width: calc(min(420px, 50vw) * min(1, var(--ratio, 1)));
 }
 
 /* Sneak peeks: smaller, half-transparent squares either side, turned in 3D
    so they face the main image (their inner edges sit farther back) */
 .carousel-peek {
   flex: none;
-  width: min(220px, 22vw);
+  width: calc(min(220px, 22vw) * min(1, var(--ratio, 1)));
   opacity: 0.5;
   cursor: pointer;
 }
@@ -1167,11 +1175,11 @@ label {
   }
 
   .carousel-frame {
-    width: 56vw;
+    width: calc(56vw * min(1, var(--ratio, 1)));
   }
 
   .carousel-peek {
-    width: 22vw;
+    width: calc(22vw * min(1, var(--ratio, 1)));
   }
 
   .carousel-peek-prev {

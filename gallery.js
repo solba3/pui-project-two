@@ -108,11 +108,10 @@ function renderGrid() {
     frame.className = 'piece-frame';
     frame.classList.toggle('is-gift', giftIdeaIds.has(piece.id));
     const image = document.createElement('img');
-    fitInSquare(image);
-    image.dataset.pieceId = piece.id;
-    image.src = photoUrl(piece.id);
+    fitToPhoto(image);
     image.alt = piece.title;
     frame.append(image, createBookmark());
+    showPhoto(image, piece.id); // once in its box, which takes the photo's shape
 
     // Below the picture: a dot for each person, centered, then the date. The
     // title and names aren't shown, so they're given to screen readers.
@@ -143,8 +142,7 @@ function renderCarousel() {
   document.getElementById('carousel-person').replaceChildren(namesWithColors(getPiecePeople(piece), personColors));
 
   const image = document.getElementById('carousel-image');
-  image.dataset.pieceId = piece.id;
-  image.src = photoUrl(piece.id);
+  showPhoto(image, piece.id);
   image.alt = piece.title;
 
   // Peek at the neighbouring pieces, unless this is the only one.
@@ -190,9 +188,7 @@ function setPeek(peek, piece) {
   peek.classList.toggle('is-gift', Boolean(piece) && giftIdeaIds.has(piece.id));
   peek.style.visibility = piece ? 'visible' : 'hidden';
   if (piece) {
-    const image = peek.querySelector('img');
-    image.dataset.pieceId = piece.id;
-    image.src = photoUrl(piece.id);
+    showPhoto(peek.querySelector('img'), piece.id);
   }
 }
 
@@ -226,13 +222,31 @@ function swingInMainImage(direction) {
   );
 }
 
-// Marks a picture taller than it is wide, so it fills its square's height
-// instead of its width, and places its square's bookmark on the picture.
-function fitInSquare(image) {
+// Each piece's box takes the shape of its photo (wide, tall or square), so its
+// edges hug the picture with no empty space around it. The shape is kept as
+// --ratio (width / height) on the box, and remembered for each piece so a
+// carousel box can change shape right away when it moves to a photo seen before.
+const photoRatios = new Map();
+
+function fitToPhoto(image) {
   image.addEventListener('load', () => {
-    image.classList.toggle('is-tall', image.naturalHeight > image.naturalWidth);
-    placeBookmark(image);
+    const ratio = image.naturalWidth / image.naturalHeight;
+    photoRatios.set(image.dataset.pieceId, ratio);
+    setPhotoRatio(image, ratio);
   });
+}
+
+function setPhotoRatio(image, ratio) {
+  // In the Mindscape the whole piece (the button around the box) takes the shape.
+  const box = image.closest('.floating-piece') || image.parentElement;
+  if (box) box.style.setProperty('--ratio', ratio);
+}
+
+// Shows a piece's photo in an image, taking its shape at once if it's known.
+function showPhoto(image, id) {
+  image.dataset.pieceId = id;
+  if (photoRatios.has(String(id))) setPhotoRatio(image, photoRatios.get(String(id)));
+  image.src = photoUrl(id);
 }
 
 // A bookmark, filled white, marking a gift idea. Every square has one; it
@@ -247,21 +261,6 @@ function createBookmark() {
   shape.setAttribute('d', 'M0 0H10V14L5 10.5L0 14Z');
   svg.append(shape);
   return svg;
-}
-
-// The picture fills its square's width (or height, if tall) and is centered,
-// so its edges can be worked out from its shape. The bookmark hangs from the
-// picture's top edge near its left corner, at 9% of the picture's width.
-// Everything is a percentage of the square, so it scales with the picture.
-function placeBookmark(image) {
-  const bookmark = image.parentElement.querySelector('.bookmark');
-  if (!bookmark || !image.naturalWidth) return;
-  const ratio = image.naturalWidth / image.naturalHeight;
-  const width = ratio >= 1 ? 100 : 100 * ratio;  // the picture's share of the square
-  const height = ratio >= 1 ? 100 / ratio : 100;
-  bookmark.style.left = `${(100 - width) / 2 + width * 0.06}%`;
-  bookmark.style.top = `${(100 - height) / 2}%`;
-  bookmark.style.width = `${width * 0.09}%`;
 }
 
 // The view is kept in the address (#carousel, #catalogue or #floating), so a
@@ -331,7 +330,7 @@ const carouselFrame = document.querySelector('.carousel-frame');
   document.getElementById('carousel-image'),
   peekPrev.querySelector('img'),
   peekNext.querySelector('img'),
-].forEach(fitInSquare);
+].forEach(fitToPhoto);
 [carouselFrame, peekPrev, peekNext].forEach((frame) => frame.append(createBookmark()));
 peekPrev.addEventListener('click', () => moveCarousel(-1));
 peekNext.addEventListener('click', () => moveCarousel(1));
@@ -981,7 +980,7 @@ function renderFloating() {
     const tile = document.createElement('button');
     tile.type = 'button';
     tile.className = 'floating-piece';
-    tile.style.width = `${size}px`;
+    tile.style.setProperty('--size', `${size}px`); // the longer side; CSS fits the photo's shape to it
     tile.style.setProperty('--layer', look.layer);
     tile.title = `${piece.title} · ${formatNames(getPiecePeople(piece))}`;
     tile.setAttribute('aria-label', `${tile.title}. Drag, or use the arrow keys, to move it.`);
@@ -995,13 +994,12 @@ function renderFloating() {
     frame.classList.toggle('is-gift', giftIdeaIds.has(piece.id));
     Object.entries(look.drift).forEach(([name, value]) => frame.style.setProperty(name, value));
     const image = document.createElement('img');
-    fitInSquare(image);
-    image.dataset.pieceId = piece.id;
-    image.src = photoUrl(piece.id);
+    fitToPhoto(image);
     image.alt = '';
     image.draggable = false; // so dragging moves the piece, not a copy of the image
     frame.append(image, createBookmark());
     tile.append(frame);
+    showPhoto(image, piece.id); // once in the piece, which takes the photo's shape
     return tile;
   });
 
@@ -1076,8 +1074,8 @@ function placeFloatingPiece(id, x, y) {
   centre.y = Math.min(Math.max(y, half), height - half);
 
   const tile = tiles.get(id);
-  tile.style.left = `${centre.x - half}px`;
-  tile.style.top = `${centre.y - half}px`;
+  tile.style.left = `${centre.x}px`; // the piece is centred on this point (see style.css)
+  tile.style.top = `${centre.y}px`;
 
   (lineEnds.get(id) || []).forEach(({ line, end }) => {
     line.setAttribute(`x${end}`, centre.x);
