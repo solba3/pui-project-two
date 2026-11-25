@@ -7,8 +7,16 @@
 
 /* <weight>: use a value from 100 to 900 */
 
+/* The paper the whole site sits on: a web-sized copy of
+   images/paper-texture.jpeg, fixed to the window so it stays put while the
+   page scrolls, over its average color while it loads */
+:root {
+  --paper: #f0e9dd url("images/paper-texture-web.jpg") center / cover fixed;
+}
+
 body {
   margin: 0;
+  background: var(--paper);
   font-family: Outfit, sans-serif;
   font-optical-sizing: auto;
   font-weight: 200;
@@ -473,7 +481,7 @@ label {
   padding: 4rem 1rem 1rem; /* room at the top for the toggle button */
   overflow-y: auto;
   text-align: left;
-  background: Canvas;
+  background: var(--paper); /* the same paper, lined up with the page's */
   border-right: 1px solid #ccc;
   /* Hidden off to the left; visibility keeps its buttons out of the tab order */
   transform: translateX(-100%);
@@ -787,7 +795,7 @@ label {
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
-    background: #ffffff;
+    background: var(--paper);
     border-top: 1px solid #d4d4d4;
   }
 
@@ -1129,7 +1137,7 @@ label {
   position: relative;
   z-index: 1; /* sits in front of the sneak peeks it overlaps */
   width: min(420px, 50vw);
-  background: Canvas; /* hides the peeks behind any empty space in the square */
+  background: var(--paper); /* hides the peeks behind any empty space in the square */
 }
 
 /* Sneak peeks: smaller, half-transparent squares either side, turned in 3D
