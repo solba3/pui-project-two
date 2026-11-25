@@ -1119,11 +1119,13 @@ label {
 }
 
 /* Carousel view */
+/* Scrolling or swiping up and down over the pieces moves through them, so
+   the browser leaves vertical touch gestures here to the page's code */
 .carousel {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  touch-action: pan-x;
 }
 
 .carousel-track {
@@ -1149,24 +1151,18 @@ label {
   cursor: pointer;
 }
 
+/* The sneak peeks lie flat, tucked slightly behind the main picture */
 .carousel-peek-prev {
-  transform: perspective(800px) rotateY(40deg);
   margin-right: -2rem;
 }
 
 .carousel-peek-next {
-  transform: perspective(800px) rotateY(-40deg);
   margin-left: -2rem;
 }
 
-/* On narrow screens, move the arrow buttons below the images */
+/* Narrow screens: a bigger main picture and smaller peeks */
 @media (max-width: 600px) {
-  .carousel {
-    flex-wrap: wrap;
-  }
-
   .carousel-track {
-    order: -1;
     width: 100%;
   }
 

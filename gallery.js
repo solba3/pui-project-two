@@ -206,8 +206,8 @@ function moveCarousel(step) {
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-// The new main image swings in from the side its sneak peek was on (1 for
-// next, -1 for previous), starting at the peek's 3D angle and unfolding into
+// The new main image slides in from the side its sneak peek was on (1 for
+// next, -1 for previous), growing from the peek's smaller, fainter size into
 // the centre. Nothing else in the carousel animates when switching pieces.
 function swingInMainImage(direction) {
   if (reduceMotion.matches) return;
@@ -218,7 +218,7 @@ function swingInMainImage(direction) {
     [
       {
         opacity: 0.5,
-        transform: `perspective(800px) translateX(${direction * 60}%) rotateY(${direction * -40}deg) scale(0.55)`,
+        transform: `translateX(${direction * 60}%) scale(0.55)`,
       },
       { opacity: 1, transform: 'none' },
     ],
@@ -321,9 +321,6 @@ sortSelect.addEventListener('change', () => {
   renderFloating();
 });
 
-document.getElementById('carousel-prev').addEventListener('click', () => moveCarousel(-1));
-document.getElementById('carousel-next').addEventListener('click', () => moveCarousel(1));
-
 // Clicking a sneak peek moves to that piece.
 const peekPrev = document.getElementById('carousel-peek-prev');
 const peekNext = document.getElementById('carousel-peek-next');
@@ -339,12 +336,78 @@ const carouselFrame = document.querySelector('.carousel-frame');
 peekPrev.addEventListener('click', () => moveCarousel(-1));
 peekNext.addEventListener('click', () => moveCarousel(1));
 
-// Left and right arrow keys also move the carousel.
+// Left and right arrow keys move the carousel; so do up and down while the
+// pieces themselves are focused.
+const carouselStage = document.querySelector('.carousel');
 document.addEventListener('keydown', (event) => {
   if (carouselView.hidden || editing || event.target.closest('select, input, textarea')) return;
   if (event.key === 'ArrowLeft') moveCarousel(-1);
   if (event.key === 'ArrowRight') moveCarousel(1);
+  if (event.target === carouselStage && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+    event.preventDefault();
+    moveCarousel(event.key === 'ArrowDown' ? 1 : -1);
+  }
 });
+
+// Scrolling through Looking Back: over the pieces, scrolling down (mouse
+// wheel or trackpad) moves to the next piece and scrolling up to the one
+// before; on a touch screen, swiping up or down does the same. One gesture
+// moves one piece, however fast or long it is. Elsewhere the page scrolls as
+// usual.
+const SCROLL_DISTANCE = 50;  // how far a scroll must go to move a piece
+const SWIPE_DISTANCE = 40;   // how far a swipe must go, in pixels
+const SCROLL_QUIET = 180;    // a pause this long (ms) ends a scroll gesture
+const SCROLL_REPEAT = 450;   // a scroll that keeps going moves on again after this long (ms)
+let scrolled = 0;
+let scrollLockedUntil = 0;
+let scrollQuietTimer = null;
+
+carouselStage.addEventListener('wheel', (event) => {
+  if (carouselView.hidden || editing || event.ctrlKey) return;
+  if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return; // sideways scrolling isn't ours
+  event.preventDefault(); // the page stays put while scrolling over the pieces
+
+  // A gesture ends when the scrolling pauses.
+  clearTimeout(scrollQuietTimer);
+  scrollQuietTimer = setTimeout(() => {
+    scrolled = 0;
+    scrollLockedUntil = 0;
+  }, SCROLL_QUIET);
+  if (performance.now() < scrollLockedUntil) return;
+
+  scrolled += event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY; // lines to pixels
+  if (Math.abs(scrolled) >= SCROLL_DISTANCE) {
+    moveCarousel(Math.sign(scrolled));
+    scrolled = 0;
+    scrollLockedUntil = performance.now() + SCROLL_REPEAT;
+  }
+}, { passive: false });
+
+let swipe = null; // where a touch began
+let swiped = false;
+carouselStage.addEventListener('pointerdown', (event) => {
+  if (event.pointerType === 'mouse') return;
+  swipe = { x: event.clientX, y: event.clientY };
+  swiped = false;
+});
+carouselStage.addEventListener('pointerup', (event) => {
+  if (!swipe || event.pointerType === 'mouse') return;
+  const dx = event.clientX - swipe.x;
+  const dy = event.clientY - swipe.y;
+  swipe = null;
+  if (editing || Math.abs(dy) < SWIPE_DISTANCE || Math.abs(dy) < Math.abs(dx)) return;
+  swiped = true;
+  moveCarousel(dy < 0 ? 1 : -1); // swiping up brings the next piece
+});
+carouselStage.addEventListener('pointercancel', () => {
+  swipe = null;
+});
+// A swipe that ends on a sneak peek doesn't also count as clicking it.
+carouselStage.addEventListener('click', (event) => {
+  if (!swiped) return;
+  swiped = false;
+  event.stopPropagation();
+}, true);
 
 async function loadArchive() {
   try {
@@ -555,7 +618,6 @@ const editButton = document.getElementById('edit-piece');
 const editForm = document.getElementById('edit-form');
 const editTitle = document.getElementById('edit-title');
 const editStatus = document.getElementById('edit-status');
-const carouselArrows = [document.getElementById('carousel-prev'), document.getElementById('carousel-next')];
 const carouselText = ['carousel-title', 'carousel-person', 'carousel-description', 'carousel-details', 'edit-piece']
   .map((id) => document.getElementById(id));
 let editing = false;
@@ -600,9 +662,6 @@ function startEditing() {
   carouselText.forEach((element) => {
     element.hidden = true;
   });
-  carouselArrows.forEach((arrow) => {
-    arrow.disabled = true;
-  });
   editForm.hidden = false;
   editTitle.focus();
 }
@@ -612,9 +671,6 @@ function stopEditing() {
   editForm.hidden = true;
   carouselText.forEach((element) => {
     element.hidden = false;
-  });
-  carouselArrows.forEach((arrow) => {
-    arrow.disabled = false;
   });
 }
 
