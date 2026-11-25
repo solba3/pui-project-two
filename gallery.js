@@ -579,7 +579,6 @@ function startEditing() {
   if (!piece) return;
 
   editing = true;
-  pendingPhoto = null;
   editTitle.value = piece.title;
   document.getElementById('edit-gift-idea').checked = giftIdeaIds.has(piece.id);
 
@@ -611,7 +610,6 @@ function startEditing() {
 function stopEditing() {
   editing = false;
   editForm.hidden = true;
-  discardPhotoPreview();
   carouselText.forEach((element) => {
     element.hidden = false;
   });
@@ -624,33 +622,54 @@ editButton.addEventListener('click', startEditing);
 
 // "Edit photo" (below the photo while editing) opens the photo editor on the
 // piece's original photo with its saved settings, so a crop can be undone.
-// The carousel previews the result; it's kept only if the piece is saved.
-let pendingPhoto = null;      // { edits, image } from the editor, until saved
-let photoPreviewUrl = null;
-
-function discardPhotoPreview() {
-  pendingPhoto = null;
-  if (!photoPreviewUrl) return;
-  URL.revokeObjectURL(photoPreviewUrl);
-  photoPreviewUrl = null;
-  const piece = pieces[carouselIndex];
-  if (piece) document.getElementById('carousel-image').src = photoUrl(piece.id);
-}
-
+// Apply saves the photo right away and every view shows it; the rest of the
+// form still saves with Save.
 document.getElementById('edit-photo').addEventListener('click', async () => {
   const piece = pieces[carouselIndex];
   if (!piece) return;
-  const original = piece.originalImage || piece.image;
-  const edits = (pendingPhoto && pendingPhoto.edits) || piece.photoEdits || NO_PHOTO_EDITS;
-  const result = await openPhotoEditor(original, edits);
+  const result = await openPhotoEditor(piece.originalImage || piece.image, piece.photoEdits || NO_PHOTO_EDITS);
   document.getElementById('edit-photo').focus();
-  if (!result || !editing) return; // cancelled
-
-  pendingPhoto = result;
-  if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-  photoPreviewUrl = URL.createObjectURL(result.image || original);
-  document.getElementById('carousel-image').src = photoPreviewUrl;
+  if (result) await savePhotoEdit(piece, result);
 });
+
+// Saves a piece's edited photo, with the original and the settings kept so it
+// can be edited again from the original. Settings that change nothing put the
+// original back.
+async function savePhotoEdit(piece, { edits, image }) {
+  const original = piece.originalImage || piece.image;
+  const updated = { ...piece, image: image || original };
+  if (image) {
+    updated.originalImage = original;
+    updated.photoEdits = edits;
+  } else {
+    delete updated.originalImage;
+    delete updated.photoEdits;
+  }
+
+  editStatus.textContent = 'Saving the photo…';
+  try {
+    await updatePiece(updated);
+  } catch (error) {
+    editStatus.textContent = "Sorry, the photo couldn't be saved. Please try again.";
+    return;
+  }
+
+  // The same object is in allPieces, so every view picks up the new photo.
+  piece.image = updated.image;
+  if (image) {
+    piece.originalImage = original;
+    piece.photoEdits = edits;
+  } else {
+    delete piece.originalImage;
+    delete piece.photoEdits;
+  }
+  URL.revokeObjectURL(imageUrls.get(piece.id));
+  imageUrls.set(piece.id, URL.createObjectURL(piece.image));
+  forgetHalftone(piece.id);
+  refreshPhotos();
+  if (photoFilter === 'halftone') makeMissingHalftones();
+  editStatus.textContent = 'Photo saved.';
+}
 
 document.getElementById('edit-cancel').addEventListener('click', () => {
   stopEditing();
@@ -739,28 +758,11 @@ editForm.addEventListener('submit', async (event) => {
     return;
   }
 
-  // An edited photo replaces the shown photo; the original and the settings
-  // are kept so it can be edited again from the original. Settings that change
-  // nothing put the original back.
-  const photo = pendingPhoto;
-  const originalPhoto = piece.originalImage || piece.image;
-  if (photo) {
-    changes.image = photo.image || originalPhoto;
-    if (photo.image) {
-      changes.originalImage = originalPhoto;
-      changes.photoEdits = photo.edits;
-    }
-  }
-
   // Saved pieces now keep a list of people with a description for each, so
   // the old single name and description go.
   const updated = { ...piece, ...changes };
   delete updated.person;
   delete updated.description;
-  if (photo && !photo.image) {
-    delete updated.originalImage;
-    delete updated.photoEdits;
-  }
 
   editStatus.textContent = 'Saving…';
   const colors = editPeople.getColors();
@@ -782,17 +784,6 @@ editForm.addEventListener('submit', async (event) => {
   delete piece.person;
   delete piece.description;
   Object.entries(colors).forEach(([name, color]) => personColors.set(personKey(name), color));
-
-  // A new photo: every view shows it, and its halftone is made again.
-  if (photo) {
-    if (!photo.image) {
-      delete piece.originalImage;
-      delete piece.photoEdits;
-    }
-    URL.revokeObjectURL(imageUrls.get(piece.id));
-    imageUrls.set(piece.id, URL.createObjectURL(piece.image));
-    forgetHalftone(piece.id);
-  }
 
   stopEditing();
 
