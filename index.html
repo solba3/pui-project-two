@@ -104,10 +104,12 @@
       <h1 id="carousel-title"></h1>
       <h2 id="carousel-person"></h2>
 
-      <div class="carousel">
-        <button type="button" id="carousel-prev" aria-label="Previous piece">&larr;</button>
+      <!-- Scroll or swipe up and down over the pieces (or use the arrow keys)
+           to move through them -->
+      <div class="carousel" tabindex="0"
+        aria-label="Pieces: scroll or swipe up and down, or use the arrow keys, to move between them">
         <div class="carousel-track">
-          <!-- Sneak peeks of the pieces before and after; the arrow buttons do the same job -->
+          <!-- Sneak peeks of the pieces before and after; clicking one moves to it -->
           <div class="piece-frame carousel-peek carousel-peek-prev" id="carousel-peek-prev" aria-hidden="true">
             <img alt="">
           </div>
@@ -118,7 +120,6 @@
             <img alt="">
           </div>
         </div>
-        <button type="button" id="carousel-next" aria-label="Next piece">&rarr;</button>
       </div>
 
       <!-- One description, or one per person when several are tagged -->
