@@ -148,9 +148,9 @@ label {
   margin-bottom: 1.25rem;
   padding: 2rem 2.5rem 2.5rem;
   background: #ffffff;
-  /* The same outline as the catalogue books, in the text color */
-  border: 2px solid currentColor;
   border-radius: 8px;
+  /* A soft drop shadow lifts the card off the page, in place of an outline */
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
 }
 
 .postcard h1 {
