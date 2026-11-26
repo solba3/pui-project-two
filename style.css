@@ -7,13 +7,6 @@
 
 /* <weight>: use a value from 100 to 900 */
 
-/* The paper the whole site sits on: a web-sized copy of
-   images/paper-texture.jpeg, fixed to the window so it stays put while the
-   page scrolls, over its average color while it loads */
-:root {
-  --paper: #f0e9dd url("images/paper-texture-web.jpg") center / cover fixed;
-}
-
 body {
   margin: 0;
   background: var(--paper);
