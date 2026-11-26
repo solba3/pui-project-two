@@ -30,7 +30,8 @@ button {
   font-family: Outfit, sans-serif;
 }
 
-:where(button):not(:where(.piece-tile, .floating-piece, .stack-book, .piece-card-dot, .book, .name-toggle, .people-list button, .people-tags button)) {
+:where(button):not(:where(.piece-tile, .floating-piece, .stack-book, .piece-card-dot, .book, .name-toggle, .people-list button, .people-tags button)),
+:where(.add-piece-link) {
   padding: 0.7rem 1rem;
   border: none;
   border-radius: 6px;
@@ -45,7 +46,8 @@ button {
 }
 
 /* Pointing at a button lifts its shadow a little */
-:where(button):not(:where(.piece-tile, .floating-piece, .stack-book, .piece-card-dot, .book, .name-toggle, .people-list button, .people-tags button)):hover {
+:where(button):not(:where(.piece-tile, .floating-piece, .stack-book, .piece-card-dot, .book, .name-toggle, .people-list button, .people-tags button)):hover,
+:where(.add-piece-link):hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 
@@ -513,9 +515,9 @@ label {
 
 .archive-page main {
   flex: 1;
+  padding-bottom: 4.5rem; /* room for "Add a piece" below the last pieces */
 }
 
-/* "Add a piece", centered at the bottom of the window */
 /* People sidebar: slides in from the left */
 
 .people-nav {
@@ -589,7 +591,7 @@ label {
 }
 
 /* The top row: "Show people" at the left, the views and order centered,
-   "Add a piece" at the right, all lined up */
+   all lined up */
 .archive-controls {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -614,26 +616,30 @@ label {
   z-index: 11; /* above the sidebar, which slides over it on narrow screens */
 }
 
+/* "Add a piece": a link that looks like every button, pinned to the bottom
+   center of the window above the pieces (centred with auto margins, so the
+   float-in can move it) */
 .add-piece-link {
-  grid-column: 3;
-  justify-self: end;
+  position: fixed;
+  z-index: 20; /* above the pieces and the people sidebar */
+  left: 0;
+  right: 0;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  width: max-content;
+  margin: 0 auto;
+  text-decoration: none;
   white-space: nowrap;
 }
 
-/* Narrow screens: "Show people" and "Add a piece" share the first row, with
-   the views and order below */
+/* Narrow screens: "Show people" on the first row, with the views and order
+   below */
 @media (max-width: 899px) {
   .archive-controls {
     grid-template-columns: 1fr 1fr;
   }
 
-  .people-toggle,
-  .add-piece-link {
+  .people-toggle {
     grid-row: 1;
-  }
-
-  .add-piece-link {
-    grid-column: 2;
   }
 
   .archive-views {
@@ -835,6 +841,11 @@ label {
   }
 
   /* Pinned to the bottom of the screen while the Mindscape is open */
+  /* "Add a piece" sits just above the zoom slider while it shows */
+  body:has(.zoom-slider-bar:not([hidden])) .add-piece-link {
+    bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+
   .zoom-slider-bar:not([hidden]) {
     position: fixed;
     z-index: 5; /* under the people sidebar */
