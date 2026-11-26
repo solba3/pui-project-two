@@ -154,18 +154,85 @@ function renderCarousel() {
   carouselSlides.clear();
   if (!pieces[carouselIndex]) return;
   carouselPosition = carouselTarget = carouselIndex;
+  renderStack();
   renderCarouselText();
   layoutCarousel();
 }
 
-// The title, people, description and date of the piece in the middle.
+// The title and people of the piece in the middle, and its title and date in
+// the stack below.
 function renderCarouselText() {
   const piece = pieces[carouselIndex];
   document.getElementById('carousel-title').replaceChildren(piece.title, peopleDots(getPiecePeople(piece), personColors));
   document.getElementById('carousel-person').replaceChildren(namesWithColors(getPiecePeople(piece), personColors));
-  renderDescriptions(piece);
-  document.getElementById('carousel-details').textContent =
-    `Collected ${formatDate(collectedDate(piece))} · ${carouselIndex + 1} of ${pieces.length}`;
+
+  stackTitle.textContent = piece.title;
+  stackDate.textContent = formatShortDate(collectedDate(piece));
+  stackBooks.querySelectorAll('.stack-book').forEach((book, index) => {
+    if (index === carouselIndex) book.setAttribute('aria-current', 'true');
+    else book.removeAttribute('aria-current');
+  });
+  placeStackLabels();
+}
+
+// The stack below the pieces: every piece as a thin book, side by side in the
+// carousel's order, colored by the person it's tagged with (a blend from top
+// to bottom when there are several). The book of the piece being looked at
+// lifts above the rest (following the scrolling as it happens), with the
+// piece's title above it and the date it was collected below. Clicking a
+// book moves to its piece.
+const stackBooks = document.getElementById('stack-books');
+const stackTitle = document.getElementById('stack-title');
+const stackDate = document.getElementById('stack-date');
+
+function renderStack() {
+  stackBooks.replaceChildren(...pieces.map((piece, index) => {
+    const book = document.createElement('button');
+    book.type = 'button';
+    book.className = 'stack-book';
+    book.style.background = bookColor(getPiecePeople(piece));
+    book.setAttribute('aria-label', `${piece.title}, collected ${formatDate(collectedDate(piece))}`);
+    book.addEventListener('click', () => goToPiece(index));
+    return book;
+  }));
+}
+
+// A person's color, or the text color for anyone without one; several people
+// blend from top to bottom.
+function bookColor(people) {
+  const colors = people.map((name) => personColors.get(personKey(name)) || 'currentColor');
+  if (colors.length === 0) return 'currentColor';
+  return colors.length === 1 ? colors[0] : `linear-gradient(${colors.join(', ')})`;
+}
+
+// Each book lifts by how close its piece is to the middle of the row.
+function liftStack() {
+  const count = pieces.length;
+  stackBooks.querySelectorAll('.stack-book').forEach((book, index) => {
+    let distance = (((index - carouselPosition) % count) + count) % count; // the row wraps around
+    if (distance > count / 2) distance = count - distance;
+    book.style.setProperty('--lift', Math.max(0, 1 - distance).toFixed(3));
+  });
+}
+
+// The title and date sit centred over the current book, kept inside the
+// stack's width so a long title near either end isn't cut off.
+function placeStackLabels() {
+  const book = stackBooks.children[carouselIndex];
+  if (!book) return;
+  const centre = book.offsetLeft + book.offsetWidth / 2;
+  const width = stackBooks.parentElement.clientWidth;
+  [stackTitle, stackDate].forEach((label) => {
+    const half = Math.min(label.offsetWidth / 2, width / 2);
+    label.style.left = `${Math.min(Math.max(centre, half), width - half)}px`;
+  });
+}
+
+// Moves the row to a piece, gliding past the ones between.
+function goToPiece(index) {
+  if (editing || !pieces[index]) return;
+  carouselTarget = Math.round(carouselPosition) + (index - carouselIndex);
+  glideCarousel();
 }
 
 // The sizes the row is drawn at: the main piece's longer side, a sneak peek's,
@@ -247,6 +314,7 @@ function layoutCarousel() {
     slide.setAttribute('aria-hidden', String(!isMain));
     slide.querySelector('img').alt = isMain ? pieces[wrapIndex(place)].title : '';
   });
+  liftStack();
 }
 
 function addCarouselSlide(place) {
@@ -268,28 +336,6 @@ function addCarouselSlide(place) {
   showPhoto(image, piece.id); // once in its box, which takes the photo's shape
   carouselSlides.set(place, slide);
   return slide;
-}
-
-// One description is shown as it is; with several people, each person's name
-// heads what the piece means to them.
-function renderDescriptions(piece) {
-  const area = document.getElementById('carousel-description');
-  const entries = getPieceDescriptions(piece);
-
-  if (entries.length === 1) {
-    const text = document.createElement('p');
-    text.textContent = entries[0].text;
-    area.replaceChildren(text);
-    return;
-  }
-
-  area.replaceChildren(...entries.flatMap(({ person, text }) => {
-    const name = document.createElement('h3');
-    name.append(coloredName(person, personColors));
-    const words = document.createElement('p');
-    words.textContent = text;
-    return [name, words];
-  }));
 }
 
 // Turns any step past either end into a position that wraps around.
@@ -445,7 +491,10 @@ carouselTrack.addEventListener('click', (event) => {
 
 // The row is drawn in pixels, so it's drawn again when the window changes size.
 window.addEventListener('resize', () => {
-  if (!carouselView.hidden && pieces.length) layoutCarousel();
+  if (!carouselView.hidden && pieces.length) {
+    layoutCarousel();
+    placeStackLabels();
+  }
 });
 
 // Left and right arrow keys move the carousel; so do up and down while the
@@ -742,7 +791,7 @@ const editButton = document.getElementById('edit-piece');
 const editForm = document.getElementById('edit-form');
 const editTitle = document.getElementById('edit-title');
 const editStatus = document.getElementById('edit-status');
-const carouselText = ['carousel-title', 'carousel-person', 'carousel-description', 'carousel-details', 'edit-piece']
+const carouselText = ['carousel-title', 'carousel-person', 'carousel-stack', 'edit-piece']
   .map((id) => document.getElementById(id));
 let editing = false;
 

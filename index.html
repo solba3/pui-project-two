@@ -112,9 +112,14 @@
         <div class="carousel-track"></div>
       </div>
 
-      <!-- One description, or one per person when several are tagged -->
-      <div id="carousel-description" class="carousel-description"></div>
-      <p id="carousel-details"></p>
+      <!-- Every piece as a thin book, in its person's color; the piece being
+           looked at lifts, with its title above and the date it was
+           collected below. Clicking a book moves to its piece. -->
+      <div id="carousel-stack" class="carousel-stack">
+        <p id="stack-title" class="stack-title"></p>
+        <div id="stack-books" class="stack-books" role="group" aria-label="All pieces"></div>
+        <p id="stack-date" class="stack-date"></p>
+      </div>
       <button type="button" id="edit-piece">Edit this piece</button>
 
       <!-- Shown in place of the title, people and description while editing -->

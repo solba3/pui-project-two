@@ -1167,14 +1167,67 @@ label {
   }
 }
 
-/* Each person's name above what the piece means to them */
-.carousel-description h3 {
-  margin: 1.25rem 0 0.25rem;
-  font-size: 1rem;
+/* The stack below the pieces: a thin book for every piece, side by side and
+   centred. The current piece's book lifts (by --lift, from 0 to 1, set by
+   gallery.js as the row scrolls), with its title above and date below. */
+.carousel-stack {
+  position: relative;
+  margin: 1.5rem auto 1.25rem;
+  padding: 2.75rem 1rem 1.75rem; /* room for the title above and date below */
 }
 
-.carousel-description h3 + p {
-  margin-top: 0;
+.stack-books {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 4px;
+  padding-top: 12px; /* room for a book to lift into */
+}
+
+.stack-book {
+  flex: 0 1 10px;
+  min-width: 3px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  color: inherit; /* a book whose person has no color takes the text color */
+  cursor: pointer;
+  transform: translateY(calc(max(var(--lift, 0), var(--hover, 0)) * -12px));
+}
+
+/* Pointing at a book lifts it a little, to show it can be chosen */
+.stack-book:hover {
+  --hover: 0.35;
+}
+
+.stack-title,
+.stack-date {
+  position: absolute;
+  left: 50%; /* moved over the current book by gallery.js */
+  margin: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  transition: left 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.stack-title {
+  top: 0;
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.stack-date {
+  bottom: 0;
+  font-size: 16px;
+  font-weight: 200;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stack-title,
+  .stack-date {
+    transition: none;
+  }
 }
 
 /* One description box per tagged person, on both forms */
@@ -1192,14 +1245,8 @@ label {
   font-family: Outfit, sans-serif;
 }
 
-/* The description boxes are typed in JetBrains Mono, like the descriptions
-   shown in Looking Back */
+/* The description boxes are typed in JetBrains Mono */
 .description-entry textarea {
   font-family: "Jetbrains Mono", Courier, monospace;
 }
 
-.carousel-description {
-  max-width: 40em;
-  margin: 1.5rem auto 0;
-  font-family: "Jetbrains Mono", Courier, monospace;
-}
