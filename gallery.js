@@ -719,7 +719,10 @@ const pieceCardImage = document.getElementById('piece-card-image');
 fitToPhoto(pieceCardImage);
 pieceCardPhoto.append(createBookmark());
 
+let cardPiece = null; // the piece on the card
+
 function openPieceCard(piece) {
+  cardPiece = piece;
   const people = getPiecePeople(piece);
 
   pieceCardPhoto.classList.toggle('is-gift', giftIdeaIds.has(piece.id));
@@ -787,6 +790,17 @@ pieceDialog.addEventListener('click', (event) => {
   if (event.target === pieceDialog) pieceDialog.close();
 });
 document.getElementById('piece-card-back').addEventListener('click', () => pieceDialog.close());
+
+// "Edit piece" closes the card and opens the piece in Looking Back, with its
+// edit form ready (the form lives there, under the photo).
+document.getElementById('piece-card-edit').addEventListener('click', () => {
+  const index = pieces.indexOf(cardPiece);
+  pieceDialog.close();
+  if (index === -1) return;
+  carouselIndex = index;
+  showView('carousel');
+  startEditing();
+});
 
 // ---------------------------------------------------------------------------
 // Catalogue: a shelf of books, one album per person, A-Z or Z-A. A book is wider the
