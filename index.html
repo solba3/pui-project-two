@@ -101,8 +101,9 @@
 
     <!-- Carousel view: one piece at a time, in the same order as the grid -->
     <section id="carousel-view" class="float-in" hidden>
-      <h1 id="carousel-title"></h1>
-      <h2 id="carousel-person"></h2>
+      <!-- The piece's title and date are shown with the stack below the
+           pieces, so the view's heading is only for screen readers -->
+      <h1 class="visually-hidden">Looking Back</h1>
 
       <!-- Scroll or swipe up and down over the pieces (or use the arrow keys)
            to move through them. The row of pieces moves with the scrolling;

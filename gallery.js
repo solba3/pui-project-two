@@ -159,13 +159,10 @@ function renderCarousel() {
   layoutCarousel();
 }
 
-// The title and people of the piece in the middle, and its title and date in
-// the stack below.
+// The title and date of the piece in the middle, shown with its book in the
+// stack below.
 function renderCarouselText() {
   const piece = pieces[carouselIndex];
-  document.getElementById('carousel-title').replaceChildren(piece.title, peopleDots(getPiecePeople(piece), personColors));
-  document.getElementById('carousel-person').replaceChildren(namesWithColors(getPiecePeople(piece), personColors));
-
   stackTitle.textContent = piece.title;
   stackDate.textContent = formatShortDate(collectedDate(piece));
   stackBooks.querySelectorAll('.stack-book').forEach((book, index) => {
@@ -191,7 +188,7 @@ function renderStack() {
     book.type = 'button';
     book.className = 'stack-book';
     book.style.background = bookColor(getPiecePeople(piece));
-    book.setAttribute('aria-label', `${piece.title}, collected ${formatDate(collectedDate(piece))}`);
+    book.setAttribute('aria-label', `${piece.title}, for ${formatNames(getPiecePeople(piece))}, collected ${formatDate(collectedDate(piece))}`);
     book.addEventListener('click', () => goToPiece(index));
     return book;
   }));
@@ -791,7 +788,7 @@ const editButton = document.getElementById('edit-piece');
 const editForm = document.getElementById('edit-form');
 const editTitle = document.getElementById('edit-title');
 const editStatus = document.getElementById('edit-status');
-const carouselText = ['carousel-title', 'carousel-person', 'carousel-stack', 'edit-piece']
+const carouselText = ['carousel-stack', 'edit-piece']
   .map((id) => document.getElementById(id));
 let editing = false;
 
