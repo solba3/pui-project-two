@@ -169,15 +169,14 @@ function renderCarouselText() {
     if (index === carouselIndex) book.setAttribute('aria-current', 'true');
     else book.removeAttribute('aria-current');
   });
-  placeStackLabels();
 }
 
 // The stack below the pieces: every piece as a thin book, side by side in the
 // carousel's order, colored by the person it's tagged with (a blend from top
-// to bottom when there are several). The book of the piece being looked at
-// lifts above the rest (following the scrolling as it happens), with the
-// piece's title above it and the date it was collected below. Clicking a
-// book moves to its piece.
+// to bottom when there are several). The stack slides with the scrolling so
+// the book of the piece being looked at stays in the middle, lifted above the
+// rest, with the piece's title above it and the date it was collected below.
+// Clicking a book moves to its piece.
 const stackBooks = document.getElementById('stack-books');
 const stackTitle = document.getElementById('stack-title');
 const stackDate = document.getElementById('stack-date');
@@ -212,17 +211,22 @@ function liftStack() {
   });
 }
 
-// The title and date sit centred over the current book, kept inside the
-// stack's width so a long title near either end isn't cut off.
-function placeStackLabels() {
-  const book = stackBooks.children[carouselIndex];
-  if (!book) return;
-  const centre = book.offsetLeft + book.offsetWidth / 2;
-  const width = stackBooks.parentElement.clientWidth;
-  [stackTitle, stackDate].forEach((label) => {
-    const half = Math.min(label.offsetWidth / 2, width / 2);
-    label.style.left = `${Math.min(Math.max(centre, half), width - half)}px`;
-  });
+// The stack slides along with the row of pieces, so the book of the piece in
+// the middle is always in the middle of the stack, under its title and above
+// its date. Between two pieces it sits between their books; past the last
+// piece it slides back to the first, as the row wraps around.
+function scrollStack() {
+  const books = stackBooks.children;
+  if (!books.length) return;
+  const count = pieces.length;
+  const before = Math.floor(carouselPosition);
+  const moved = carouselPosition - before;
+  const centreOf = (place) => {
+    const book = books[wrapIndex(place)];
+    return book.offsetLeft + book.offsetWidth / 2;
+  };
+  const centre = count > 1 ? centreOf(before) + (centreOf(before + 1) - centreOf(before)) * moved : centreOf(before);
+  stackBooks.style.transform = `translateX(${stackBooks.parentElement.clientWidth / 2 - centre}px)`;
 }
 
 // Moves the row to a piece, gliding past the ones between.
@@ -312,6 +316,7 @@ function layoutCarousel() {
     slide.querySelector('img').alt = isMain ? pieces[wrapIndex(place)].title : '';
   });
   liftStack();
+  scrollStack();
 }
 
 function addCarouselSlide(place) {
@@ -490,7 +495,6 @@ carouselTrack.addEventListener('click', (event) => {
 window.addEventListener('resize', () => {
   if (!carouselView.hidden && pieces.length) {
     layoutCarousel();
-    placeStackLabels();
   }
 });
 

@@ -118,7 +118,10 @@
            collected below. Clicking a book moves to its piece. -->
       <div id="carousel-stack" class="carousel-stack">
         <p id="stack-title" class="stack-title"></p>
-        <div id="stack-books" class="stack-books" role="group" aria-label="All pieces"></div>
+        <!-- A window onto the books, which slide through it as the pieces scroll -->
+        <div class="stack-window">
+          <div id="stack-books" class="stack-books" role="group" aria-label="All pieces"></div>
+        </div>
         <p id="stack-date" class="stack-date"></p>
       </div>
       <button type="button" id="edit-piece">Edit this piece</button>
