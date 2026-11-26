@@ -800,9 +800,11 @@ label {
   width: clamp(3rem, calc(2rem + var(--pieces, 1) * 1rem), 12rem);
   height: 14rem;
   padding: 1rem 0;
-  border: 2px solid currentColor; /* the person's color, set on the book by gallery.js */
-  background: #ffffff;
-  color: inherit;
+  /* Filled with the person's color, the name in black or white, whichever
+     has the better contrast on it (both set on the book by gallery.js) */
+  border: 2px solid var(--book, #000000);
+  background: var(--book, #000000);
+  color: var(--book-text, #ffffff);
   font: inherit;
   cursor: pointer;
   transition: all 0.5s ease;
