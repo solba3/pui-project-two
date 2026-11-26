@@ -1238,10 +1238,8 @@ function renderFloating() {
     tile.style.setProperty('--layer', look.layer);
     tile.title = `${piece.title} · ${formatNames(getPiecePeople(piece))}`;
     tile.setAttribute('aria-label', `${tile.title}. Drag, or use the arrow keys, to move it.`);
-    makeDraggable(tile, piece, look, () => {
-      carouselIndex = index;
-      showView('carousel');
-    });
+    tile.setAttribute('aria-haspopup', 'dialog');
+    makeDraggable(tile, piece, look, () => openPieceCard(piece)); // a click opens its card
 
     const frame = document.createElement('span');
     frame.className = 'piece-frame';
