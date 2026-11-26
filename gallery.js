@@ -827,8 +827,11 @@ function renderCatalogue() {
     label.className = 'book-label';
     label.textContent = person.name;
 
-    // The name and the outline both take the person's color.
-    if (personColors.has(personKey(person.name))) book.style.color = personColors.get(personKey(person.name));
+    // The book is filled with the person's color (black for anyone without
+    // one), its name in black or white, whichever reads better on it.
+    const color = personColor(person.name);
+    book.style.setProperty('--book', color);
+    book.style.setProperty('--book-text', readableTextOn(color));
 
     book.append(label);
     book.addEventListener('click', () => {
