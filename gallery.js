@@ -95,14 +95,12 @@ function renderGrid() {
   pieces.forEach((piece, index) => {
     const item = document.createElement('li');
 
-    // Selecting a piece opens it in the carousel.
+    // Selecting a piece opens it on its own card, over the grid.
     const tile = document.createElement('button');
     tile.type = 'button';
     tile.className = 'piece-tile';
-    tile.addEventListener('click', () => {
-      carouselIndex = index;
-      showView('carousel');
-    });
+    tile.setAttribute('aria-haspopup', 'dialog');
+    tile.addEventListener('click', () => openPieceCard(piece));
 
     const frame = document.createElement('span');
     frame.className = 'piece-frame';
@@ -708,6 +706,87 @@ function choosePerson(name) {
   // On a narrow screen the sidebar covers the pieces, so close it.
   if (!wideScreen.matches) setPeopleOpen(false);
 }
+
+// ---------------------------------------------------------------------------
+// A piece's card: opened from the grid, over the page dimmed behind it. The
+// photo, with a circle in each person's color below it (choosing one shows
+// that person's album), the date it was collected and its title; beside it,
+// what the piece means to each person, in a speech bubble in their color.
+
+const pieceDialog = document.getElementById('piece-dialog');
+const pieceCardPhoto = document.getElementById('piece-card-photo');
+const pieceCardImage = document.getElementById('piece-card-image');
+fitToPhoto(pieceCardImage);
+pieceCardPhoto.append(createBookmark());
+
+function openPieceCard(piece) {
+  const people = getPiecePeople(piece);
+
+  pieceCardPhoto.classList.toggle('is-gift', giftIdeaIds.has(piece.id));
+  pieceCardImage.alt = piece.title;
+  showPhoto(pieceCardImage, piece.id);
+
+  document.getElementById('piece-card-people').replaceChildren(...people.map((name) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'piece-card-dot';
+    dot.title = name;
+    dot.setAttribute('aria-label', `See ${name}'s album`);
+    dot.style.setProperty('--dot', personColor(name));
+    dot.addEventListener('click', () => {
+      pieceDialog.close();
+      choosePerson(name);
+      showView('grid');
+    });
+    return dot;
+  }));
+  document.getElementById('piece-card-date').textContent = `collected ${formatDate(collectedDate(piece))}`;
+  document.getElementById('piece-card-title').textContent = piece.title;
+
+  // One bubble per person. An older piece has one description for everyone,
+  // shown under all their names in the first person's color.
+  document.getElementById('piece-card-words').replaceChildren(...getPieceDescriptions(piece)
+    .filter(({ text }) => text)
+    .map(({ person, text }) => {
+      const speech = document.createElement('div');
+      speech.className = 'speech';
+      const name = document.createElement('p');
+      name.className = 'speech-name';
+      name.textContent = person || formatNames(people);
+      const bubble = document.createElement('p');
+      bubble.className = 'speech-bubble';
+      bubble.textContent = text;
+      const color = personColor(person || people[0] || '');
+      bubble.style.setProperty('--bubble', color);
+      bubble.style.setProperty('--bubble-text', readableTextOn(color));
+      speech.append(name, bubble);
+      return speech;
+    }));
+
+  pieceDialog.showModal();
+}
+
+// A person's color, or black for anyone without one.
+function personColor(name) {
+  return personColors.get(personKey(name)) || DEFAULT_COLOR;
+}
+
+// Black or white, whichever is easier to read on a color: the one with the
+// higher WCAG contrast ratio against it. contrastOnWhite gives the ratio with
+// white, (1 + 0.05) / (L + 0.05); with black it is (L + 0.05) / 0.05, which
+// is 21 divided by the ratio with white.
+function readableTextOn(color) {
+  const withWhite = contrastOnWhite(color);
+  const withBlack = 21 / withWhite;
+  return withBlack >= withWhite ? '#000000' : '#ffffff';
+}
+
+// Clicking outside the card (on the dimmed page, which belongs to the dialog
+// itself) or "Back to all pieces" closes it; so does Escape.
+pieceDialog.addEventListener('click', (event) => {
+  if (event.target === pieceDialog) pieceDialog.close();
+});
+document.getElementById('piece-card-back').addEventListener('click', () => pieceDialog.close());
 
 // ---------------------------------------------------------------------------
 // Catalogue: a shelf of books, one album per person, A-Z or Z-A. A book is wider the

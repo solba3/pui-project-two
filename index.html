@@ -201,6 +201,26 @@
     <output id="zoom-slider-value" for="zoom-slider">100%</output>
   </div>
 
+  <!-- A piece on its own, opened from the grid: a card over the dimmed page,
+       with the photo, the people's colors, the date and title, and what the
+       piece means to each person in a speech bubble in their color. Clicking
+       a color shows that person's album; clicking outside the card, "Back to
+       all pieces" or Escape closes it. -->
+  <dialog id="piece-dialog" class="piece-dialog" aria-labelledby="piece-card-title">
+    <article class="piece-card">
+      <div class="piece-frame piece-card-photo" id="piece-card-photo">
+        <img id="piece-card-image" alt="">
+      </div>
+      <div class="piece-card-words" id="piece-card-words"></div>
+      <div class="piece-card-details">
+        <div class="piece-card-people" id="piece-card-people"></div>
+        <p class="piece-card-date" id="piece-card-date"></p>
+        <h2 class="piece-card-title" id="piece-card-title"></h2>
+      </div>
+    </article>
+    <button type="button" class="piece-card-back" id="piece-card-back">Back to all pieces</button>
+  </dialog>
+
   <script src="db.js"></script>
   <script src="people-field.js"></script>
   <script src="photo-editor.js"></script>
