@@ -38,7 +38,7 @@ button {
 }
 
 :where(button):not(:where(.piece-tile, .floating-piece, .stack-book, .piece-card-dot, .book, .name-toggle, .people-list button, .people-tags button)),
-:where(.add-piece-link) {
+:where(.button-link) {
   padding: 0.7rem 1rem;
   border: none;
   border-radius: 6px;
@@ -54,8 +54,14 @@ button {
 
 /* Pointing at a button lifts its shadow a little */
 :where(button):not(:where(.piece-tile, .floating-piece, .stack-book, .piece-card-dot, .book, .name-toggle, .people-list button, .people-tags button)):hover,
-:where(.add-piece-link):hover {
+:where(.button-link):hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+/* Links that look like buttons ("Add a piece", "Back to all pieces") */
+.button-link {
+  display: inline-block;
+  text-decoration: none;
 }
 
 /* The "Choose File" button of a file picker, to match (the picker gets a
@@ -634,7 +640,6 @@ label {
   bottom: calc(1.5rem + env(safe-area-inset-bottom));
   width: max-content;
   margin: 0 auto;
-  text-decoration: none;
   white-space: nowrap;
 }
 
