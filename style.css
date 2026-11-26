@@ -1167,26 +1167,35 @@ label {
   }
 }
 
-/* The stack below the pieces: a thin book for every piece, side by side and
-   centred. The current piece's book lifts (by --lift, from 0 to 1, set by
-   gallery.js as the row scrolls), with its title above and date below. */
+/* The stack below the pieces: a thin book for every piece, side by side. The
+   books slide through a window (moved by gallery.js as the pieces scroll) so
+   the current piece's book stays in the middle, lifted (by --lift, from 0 to
+   1) under its title and above its date. The window's ends fade out. */
 .carousel-stack {
   position: relative;
   margin: 1.5rem auto 1.25rem;
-  padding: 2.75rem 1rem 1.75rem; /* room for the title above and date below */
+  padding: 2.75rem 0 1.75rem; /* room for the title above and date below */
+}
+
+.stack-window {
+  width: min(100%, 36rem);
+  margin: 0 auto;
+  padding-top: 12px; /* room for a book to lift into */
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 20%, #000 80%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 20%, #000 80%, transparent);
 }
 
 .stack-books {
   display: flex;
-  justify-content: center;
   align-items: flex-end;
   gap: 4px;
-  padding-top: 12px; /* room for a book to lift into */
+  width: max-content;
 }
 
 .stack-book {
-  flex: 0 1 10px;
-  min-width: 3px;
+  flex: none;
+  width: 10px;
   height: 44px;
   padding: 0;
   border: none;
@@ -1201,14 +1210,17 @@ label {
   --hover: 0.35;
 }
 
+/* The title and date stay in the middle, over and under the current book */
 .stack-title,
 .stack-date {
   position: absolute;
-  left: 50%; /* moved over the current book by gallery.js */
+  left: 50%;
+  max-width: calc(100% - 2rem);
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis; /* a very long title ends in "…" */
   transform: translateX(-50%);
   white-space: nowrap;
-  transition: left 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .stack-title {
@@ -1221,13 +1233,6 @@ label {
   bottom: 0;
   font-size: 16px;
   font-weight: 200;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stack-title,
-  .stack-date {
-    transition: none;
-  }
 }
 
 /* One description box per tagged person, on both forms */
