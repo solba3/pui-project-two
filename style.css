@@ -21,8 +21,62 @@ h1 {
   font-weight: 200;
 }
 
+/* Every button on the site looks like "Back to all pieces" on a piece's
+   card: white, rounded, no border, with a slight drop shadow so it shows on
+   the white page and cards. Buttons that are pieces, books, color circles or
+   names keep their own look, so they're left out. (:where keeps this rule
+   from outweighing any button's own styles.) */
 button {
   font-family: Outfit, sans-serif;
+}
+
+:where(button):not(:where(.piece-tile, .floating-piece, .stack-book, .piece-card-dot, .book, .name-toggle, .people-list button, .people-tags button)) {
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #ffffff;
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.2;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+/* Pointing at a button lifts its shadow a little */
+:where(button):not(:where(.piece-tile, .floating-piece, .stack-book, .piece-card-dot, .book, .name-toggle, .people-list button, .people-tags button)):hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+/* The "Choose File" button of a file picker, to match (the picker gets a
+   little room so the button's shadow isn't cut off) */
+input[type="file"] {
+  padding: 4px;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #ffffff;
+  color: inherit;
+  font-family: Outfit, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 400;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+/* The view being shown: its button looks pressed in */
+:where(button)[aria-pressed="true"] {
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.22);
+}
+
+:where(button):disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 label {
@@ -474,7 +528,7 @@ label {
   padding: 4rem 1rem 1rem; /* room at the top for the toggle button */
   overflow-y: auto;
   text-align: left;
-  background: var(--paper); /* the same paper, lined up with the page's */
+  background: var(--paper, #ffffff); /* the page's background (white, now the paper is gone) */
   border-right: 1px solid #ccc;
   /* Hidden off to the left; visibility keeps its buttons out of the tab order */
   transform: translateX(-100%);
@@ -791,7 +845,7 @@ label {
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
-    background: var(--paper);
+    background: var(--paper, #ffffff);
     border-top: 1px solid #d4d4d4;
   }
 
@@ -1397,15 +1451,7 @@ html:has(.piece-dialog[open]) {
 }
 
 .piece-card-back {
-  margin-top: 0.9rem;
-  padding: 0.7rem 1rem;
-  border: none;
-  border-radius: 6px;
-  background: #ffffff;
-  color: inherit;
-  font-size: 0.8rem;
-  font-weight: 400;
-  cursor: pointer;
+  margin-top: 0.9rem; /* its look is every button's (see the top of this file) */
 }
 
 /* Narrow screens: the photo, then its people, date and title, then the
